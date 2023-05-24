@@ -1,0 +1,10 @@
+import { Entity, Column } from 'typeorm';
+import { BaseEntity } from '../../../common/base.entity';
+
+@Entity('sys_$4')
+export class $1Entity extends BaseEntity {
+  @Column({ comment: '名称' })
+  name?: string;
+  @Column({ comment: '代码' })
+  code?: string;
+}

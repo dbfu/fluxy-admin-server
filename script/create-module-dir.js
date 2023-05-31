@@ -13,3 +13,4 @@ fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/controller`));
 fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/service`));
 fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/entity`));
 fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/dto`));
+fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/vo`));

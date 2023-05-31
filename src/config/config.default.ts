@@ -5,6 +5,7 @@ export default {
   keys: '1684629293601_5943',
   koa: {
     port: 7001,
+    globalPrefix: '/api',
   },
   typeorm: {
     dataSource: {
@@ -17,11 +18,12 @@ export default {
         port: 3306,
         username: 'root',
         password: '12345678',
-        database: 'test', // 数据库名称
+        database: 'fluxy-admin', // 数据库名称
         synchronize: true, // 如果第一次使用，不存在表，有同步的需求可以写 true，注意会丢数据
-        logging: true,
+        logging: false,
         // 扫描entity文件夹
         entities: ['**/entity/*{.ts,.js}'],
+        timezone: '+00:00',
       },
     },
   },
@@ -29,7 +31,6 @@ export default {
     client: {
       port: 6379, // Redis port
       host: 'localhost', // Redis host
-      password: '123456',
       db: 0,
     },
   },
@@ -39,6 +40,11 @@ export default {
       en_US: require('../locales/en_US'),
       zh_CN: require('../locales/zh_CN'),
     },
-    defaultLocale: 'en_US',
+    defaultLocale: 'zh_CN',
+  },
+  validate: {
+    validationOptions: {
+      allowUnknown: true,
+    },
   },
 } as MidwayConfig;

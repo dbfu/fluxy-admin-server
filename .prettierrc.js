@@ -1,3 +1,4 @@
 module.exports = {
-  ...require('mwts/.prettierrc.json')
+  ...require('mwts/.prettierrc.json'),
+  arrowParens: "avoid",
 }

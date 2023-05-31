@@ -21,6 +21,7 @@ fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/controller`));
 fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/service`));
 fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/entity`));
 fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/dto`));
+fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/vo`));
 
 let controllerContent = fs
   .readFileSync(path.resolve(__dirname, './template/controller.template'))
@@ -36,6 +37,10 @@ let entityContent = fs
 
 let dtoContent = fs
   .readFileSync(path.resolve(__dirname, './template/dto.template'))
+  .toString();
+
+let voContent = fs
+  .readFileSync(path.resolve(__dirname, './template/vo.template'))
   .toString();
 
 let name;
@@ -85,6 +90,11 @@ dtoContent = dtoContent
   .replace(/\$2/g, filename)
   .replace(/\$3/g, varName);
 
+voContent = voContent
+  .replace(/\$1/g, name)
+  .replace(/\$2/g, filename)
+  .replace(/\$3/g, varName);
+
 fs.writeFileSync(
   path.resolve(
     __dirname,
@@ -112,4 +122,9 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.resolve(__dirname, `../src/module/${moduleName}/dto/${moduleName}.ts`),
   dtoContent
+);
+
+fs.writeFileSync(
+  path.resolve(__dirname, `../src/module/${moduleName}/vo/${moduleName}.ts`),
+  voContent
 );

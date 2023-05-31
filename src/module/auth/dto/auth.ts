@@ -1,10 +1,11 @@
 import { Rule } from '@midwayjs/validate';
 import { ApiProperty } from '@midwayjs/swagger';
-import { BookEntity } from '../entity/book';
 import { R } from '../../../common/base.error.util';
 import { requiredString } from '../../../common/common.validate.rules';
+import { AuthEntity } from '../entity/auth';
+import { BaseDTO } from '../../../common/base.dto';
 
-export class BookDTO extends BookEntity {
+export class AuthDTO extends BaseDTO<AuthEntity> {
   @ApiProperty({
     description: '代码',
   })

@@ -9,11 +9,11 @@ export abstract class BaseService<T extends BaseEntity> {
 
   abstract getModel(): Repository<T>;
 
-  async create(entity: T) {
+  async create(entity: T): Promise<any> {
     return await this.getModel().save(entity);
   }
 
-  async edit(entity: T): Promise<T | void> {
+  async edit(entity: T): Promise<any> {
     return await this.getModel().save(entity);
   }
 
@@ -29,7 +29,7 @@ export abstract class BaseService<T extends BaseEntity> {
   }
 
   async page(page = 0, pageSize = 10, where?: FindOptionsWhere<T>) {
-    const order: any = { create_time: 'desc' };
+    const order: any = { createDate: 'desc' };
 
     const [data, total] = await this.getModel().findAndCount({
       where,
@@ -38,7 +38,7 @@ export abstract class BaseService<T extends BaseEntity> {
       take: pageSize,
     });
 
-    return { data, total };
+    return { data: data.map(entity => entity.toVO()), total };
   }
 
   async list(where?: FindOptionsWhere<T>) {

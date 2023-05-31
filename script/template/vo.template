@@ -1,0 +1,5 @@
+import { $1Entity } from '../entity/$2';
+import { PickVO } from '../../../utils/vo.utils';
+
+// eslint-disable-next-line prettier/prettier
+export class $1VO extends PickVO($1Entity, []) {}

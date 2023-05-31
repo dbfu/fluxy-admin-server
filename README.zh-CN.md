@@ -1,4 +1,4 @@
-# my_midway_project
+# fluxy-admin-server
 
 ## 快速入门
 

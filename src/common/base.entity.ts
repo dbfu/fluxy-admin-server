@@ -5,10 +5,13 @@ import {
 } from 'typeorm';
 
 export class BaseEntity {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ comment: '主键' })
   id?: number;
-  @CreateDateColumn()
-  create_time?: Date;
-  @UpdateDateColumn()
-  update_time?: Date;
+  @CreateDateColumn({ comment: '创建时间' })
+  createDate?: Date;
+  @UpdateDateColumn({ comment: '更新时间' })
+  updateDate?: Date;
+  toVO(): any {
+    return this;
+  }
 }

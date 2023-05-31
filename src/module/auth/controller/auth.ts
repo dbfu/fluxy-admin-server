@@ -11,45 +11,45 @@ import {
   Param,
   Del,
 } from '@midwayjs/decorator';
-import { $1DTO } from '../dto/$2';
-import { $1Service } from '../service/$2';
+import { AuthDTO } from '../dto/auth';
+import { AuthService } from '../service/auth';
 
 @Provide()
-@Controller('/$5')
-export class $1Controller {
+@Controller('/auth')
+export class AuthController {
   @Inject()
-  $3Service: $1Service;
+  authService: AuthService;
 
   @Post('/', { description: '新建' })
-  async create(@Body(ALL) data: $1DTO) {
-    return await this.$3Service.create(data.toEntity());
+  async create(@Body(ALL) data: AuthDTO) {
+    return await this.authService.create(data.toEntity());
   }
 
   @Put('/', { description: '编辑' })
-  async edit(@Body(ALL) data: $1DTO) {
-    const $3 = await this.$3Service.getById(data.id);
+  async edit(@Body(ALL) data: AuthDTO) {
+    const auth = await this.authService.getById(data.id);
     // update
-    return await this.$3Service.edit($3);
+    return await this.authService.edit(auth);
   }
 
   @Del('/:id', { description: '删除' })
   async remove(@Param('id') id: number) {
-    const $3 = await this.$3Service.getById(id);
-    await this.$3Service.remove($3);
+    const auth = await this.authService.getById(id);
+    await this.authService.remove(auth);
   }
 
   @Get('/:id', { description: '根据id查询' })
   async getById(@Param('id') id: number) {
-    return await this.$3Service.getById(id);
+    return await this.authService.getById(id);
   }
 
   @Get('/page', { description: '分页查询' })
   async page(@Query('page') page: number, @Query('size') size: number) {
-    return await this.$3Service.page(page, size);
+    return await this.authService.page(page, size);
   }
 
   @Get('/list', { description: '查询全部' })
   async list() {
-    return await this.$3Service.list();
+    return await this.authService.list();
   }
 }

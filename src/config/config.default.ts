@@ -1,4 +1,6 @@
 import { MidwayConfig } from '@midwayjs/core';
+import * as redisStore from 'cache-manager-ioredis';
+import { TokenConfig } from '../interface/token.config';
 
 export default {
   // use for cookie sign key, should change to your own and keep security
@@ -46,5 +48,35 @@ export default {
     validationOptions: {
       allowUnknown: true,
     },
+  },
+  token: {
+    expire: 60 * 60 * 2, // 2小时
+    refreshExpire: 60 * 60 * 24 * 15, // 15天
+  } as TokenConfig,
+  cache: {
+    store: redisStore,
+    options: {
+      host: 'localhost', // default value
+      port: 6379, // default value
+      password: '',
+      db: 0,
+      keyPrefix: 'cache:',
+      ttl: 100,
+    },
+  },
+  captcha: {
+    default: {
+      size: 4,
+      noise: 1,
+      width: 120,
+      height: 40,
+    },
+    image: {
+      type: 'mixed',
+    },
+    formula: {},
+    text: {},
+    expirationTime: 3600,
+    idPrefix: 'captcha',
   },
 } as MidwayConfig;

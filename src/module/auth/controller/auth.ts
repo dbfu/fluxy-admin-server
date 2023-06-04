@@ -1,55 +1,86 @@
 import {
   Body,
   Controller,
-  Get,
   Inject,
   Post,
   Provide,
-  Query,
   ALL,
-  Put,
-  Param,
-  Del,
+  Get,
 } from '@midwayjs/decorator';
-import { AuthDTO } from '../dto/auth';
-import { AuthService } from '../service/auth';
+import { ApiResponse } from '@midwayjs/swagger';
+import * as NodeRSA from 'node-rsa';
+import { RedisService } from '@midwayjs/redis';
 
+import { AuthService } from '../service/auth';
+import { TokenVO } from '../vo/token';
+import { LoginDTO } from '../dto/login';
+import { CaptchaService } from '../service/captcha';
+import { R } from '../../../common/base.error.util';
 @Provide()
 @Controller('/auth')
 export class AuthController {
   @Inject()
   authService: AuthService;
+  @Inject()
+  captchaService: CaptchaService;
+  @Inject()
+  redisService: RedisService;
 
-  @Post('/', { description: '新建' })
-  async create(@Body(ALL) data: AuthDTO) {
-    return await this.authService.create(data.toEntity());
+  @Post('/login', { description: '登录' })
+  @ApiResponse({ type: TokenVO })
+  async login(@Body(ALL) loginDTO: LoginDTO) {
+    const { captcha, captchaId } = loginDTO;
+
+    const result = await this.captchaService.check(captchaId, captcha);
+
+    if (!result) {
+      throw R.error('验证码错误');
+    }
+
+    const privateKey = await this.redisService.get(
+      `publicKey:${loginDTO.publicKey}`
+    );
+
+    await this.redisService.del(`publicKey:${loginDTO.publicKey}`);
+
+    if (!privateKey) {
+      throw R.error('登录出现异常，请重新登录');
+    }
+
+    // 解密
+    const decrypt = new NodeRSA(privateKey);
+    decrypt.setOptions({ encryptionScheme: 'pkcs1' });
+    const password = decrypt.decrypt(loginDTO.password, 'utf8');
+
+    if (!password) {
+      throw R.error('登录出现异常，请重新登录');
+    }
+
+    loginDTO.password = password;
+
+    return await this.authService.login(loginDTO);
   }
 
-  @Put('/', { description: '编辑' })
-  async edit(@Body(ALL) data: AuthDTO) {
-    const auth = await this.authService.getById(data.id);
-    // update
-    return await this.authService.edit(auth);
+  @Get('/captcha')
+  async getImageCaptcha() {
+    const { id, imageBase64 } = await this.captchaService.formula({
+      height: 40,
+      width: 120,
+      noise: 1,
+      color: true,
+    });
+    return {
+      id,
+      imageBase64,
+    };
   }
 
-  @Del('/:id', { description: '删除' })
-  async remove(@Param('id') id: number) {
-    const auth = await this.authService.getById(id);
-    await this.authService.remove(auth);
-  }
-
-  @Get('/:id', { description: '根据id查询' })
-  async getById(@Param('id') id: number) {
-    return await this.authService.getById(id);
-  }
-
-  @Get('/page', { description: '分页查询' })
-  async page(@Query('page') page: number, @Query('size') size: number) {
-    return await this.authService.page(page, size);
-  }
-
-  @Get('/list', { description: '查询全部' })
-  async list() {
-    return await this.authService.list();
+  @Get('/publicKey')
+  async getPublicKey() {
+    const key = new NodeRSA({ b: 512 });
+    const publicKey = key.exportKey('public');
+    const privateKey = key.exportKey('private');
+    await this.redisService.set(`publicKey:${publicKey}`, privateKey);
+    return publicKey;
   }
 }

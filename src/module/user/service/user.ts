@@ -39,7 +39,7 @@ export class UserService extends BaseService<UserEntity> {
       throw R.error('当前邮箱已存在');
     }
 
-    // 对密码进行加盐加密
+    // 添加用户的默认密码是123456，对密码进行加盐加密
     const password = bcrypt.hashSync('123456', 10);
 
     entity.password = password;

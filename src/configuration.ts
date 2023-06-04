@@ -7,6 +7,7 @@ import * as orm from '@midwayjs/typeorm';
 import * as redis from '@midwayjs/redis';
 import * as swagger from '@midwayjs/swagger';
 import * as i18n from '@midwayjs/i18n';
+import * as cache from '@midwayjs/cache';
 // import { DefaultErrorFilter } from './filter/default.filter';
 import { NotFoundFilter } from './filter/notfound.filter';
 import { ReportMiddleware } from './middleware/report.middleware';
@@ -20,6 +21,7 @@ import { CommonErrorFilter } from './filter/common.error';
     validate,
     orm,
     redis,
+    cache,
     {
       component: swagger,
       enabledEnvironment: ['local'],

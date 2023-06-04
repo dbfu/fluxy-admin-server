@@ -5,6 +5,8 @@
   "private": true,
   "dependencies": {
     "@midwayjs/bootstrap": "^3.11.6",
+    "@midwayjs/cache": "3",
+    "@midwayjs/captcha": "3",
     "@midwayjs/core": "^3.11.6",
     "@midwayjs/decorator": "^3.11.6",
     "@midwayjs/i18n": "3",
@@ -16,8 +18,16 @@
     "@midwayjs/typeorm": "3",
     "@midwayjs/validate": "^3.11.6",
     "bcryptjs": "^2.4.3",
+    "cache-manager": "^5.2.1",
+    "cache-manager-ioredis": "^2.1.0",
+    "crypto-js": "^4.1.1",
+    "jsencrypt": "^3.3.2",
     "lodash": "^4.17.21",
+    "mini-svg-data-uri": "^1.4.4",
     "mysql2": "^3.3.1",
+    "nanoid": "^3.3.6",
+    "node-rsa": "^1.1.1",
+    "svg-captcha": "^1.4.0",
     "typeorm": "^0.3.16"
   },
   "devDependencies": {

@@ -13,6 +13,8 @@ import {
 } from '@midwayjs/decorator';
 import { UserDTO } from '../dto/user';
 import { UserService } from '../service/user';
+import { FindOptionsWhere, Like } from 'typeorm';
+import { UserEntity } from '../entity/user';
 
 @Provide()
 @Controller('/user')
@@ -50,8 +52,23 @@ export class UserController {
   }
 
   @Get('/page', { description: '分页查询' })
-  async page(@Query('page') page: number, @Query('size') size: number) {
-    return await this.userService.page(page, size);
+  async page(
+    @Query('page') page: number,
+    @Query('size') size: number,
+    @Query('nickName') nickName: string,
+    @Query('phoneNumber') phoneNumber: string
+  ) {
+    const query: FindOptionsWhere<UserEntity> = {};
+
+    if (phoneNumber) {
+      query.phoneNumber = Like(`%${phoneNumber}%`);
+    }
+
+    if (nickName) {
+      query.nickName = Like(`%${nickName}%`);
+    }
+
+    return await this.userService.page(page, size, query);
   }
 
   @Get('/list', { description: '查询全部' })

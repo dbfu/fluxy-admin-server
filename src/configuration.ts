@@ -10,9 +10,10 @@ import * as i18n from '@midwayjs/i18n';
 import * as cache from '@midwayjs/cache';
 // import { DefaultErrorFilter } from './filter/default.filter';
 import { NotFoundFilter } from './filter/notfound.filter';
-import { ReportMiddleware } from './middleware/report.middleware';
+import { AuthMiddleware } from './middleware/auth';
 import { ValidateErrorFilter } from './filter/validate.filter';
-import { CommonErrorFilter } from './filter/common.error';
+import { CommonErrorFilter } from './filter/common.filter';
+import { UnauthorizedErrorFilter } from './filter/unauthorized.filter';
 
 @Configuration({
   imports: [
@@ -39,12 +40,13 @@ export class ContainerLifeCycle {
 
   async onReady() {
     // add middleware
-    this.app.useMiddleware([ReportMiddleware]);
+    this.app.useMiddleware([AuthMiddleware]);
     // add filter
     this.app.useFilter([
       ValidateErrorFilter,
       CommonErrorFilter,
       NotFoundFilter,
+      UnauthorizedErrorFilter,
     ]);
   }
 }

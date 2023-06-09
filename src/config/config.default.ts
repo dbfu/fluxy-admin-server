@@ -51,7 +51,7 @@ export default {
   },
   token: {
     expire: 60 * 60 * 2, // 2小时
-    refreshExpire: 60 * 60 * 24 * 15, // 15天
+    refreshExpire: 60 * 60 * 24 * 7, // 7天
   } as TokenConfig,
   cache: {
     store: redisStore,

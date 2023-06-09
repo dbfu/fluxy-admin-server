@@ -10,12 +10,17 @@ import {
 import { ApiResponse } from '@midwayjs/swagger';
 import * as NodeRSA from 'node-rsa';
 import { RedisService } from '@midwayjs/redis';
+import { Context } from '@midwayjs/core';
 
 import { AuthService } from '../service/auth';
 import { TokenVO } from '../vo/token';
 import { LoginDTO } from '../dto/login';
 import { CaptchaService } from '../service/captcha';
 import { R } from '../../../common/base.error.util';
+import { UserService } from '../../user/service/user';
+import { NotLogin } from '../../../decorator/not.login';
+import { UserVO } from '../../user/vo/user';
+import { RefreshTokenDTO } from '../dto/refresh.token';
 @Provide()
 @Controller('/auth')
 export class AuthController {
@@ -25,9 +30,14 @@ export class AuthController {
   captchaService: CaptchaService;
   @Inject()
   redisService: RedisService;
+  @Inject()
+  userService: UserService;
+  @Inject()
+  ctx: Context;
 
   @Post('/login', { description: '登录' })
   @ApiResponse({ type: TokenVO })
+  @NotLogin()
   async login(@Body(ALL) loginDTO: LoginDTO) {
     const { captcha, captchaId } = loginDTO;
 
@@ -61,7 +71,17 @@ export class AuthController {
     return await this.authService.login(loginDTO);
   }
 
+  @Post('/refresh/token', { description: '刷新token' })
+  @NotLogin()
+  async refreshToken(@Body(ALL) data: RefreshTokenDTO) {
+    if (!data.refreshToken) {
+      throw R.error('用户凭证已过期，请重新登录！');
+    }
+    return this.authService.refreshToken(data);
+  }
+
   @Get('/captcha')
+  @NotLogin()
   async getImageCaptcha() {
     const { id, imageBase64 } = await this.captchaService.formula({
       height: 40,
@@ -76,11 +96,34 @@ export class AuthController {
   }
 
   @Get('/publicKey')
+  @NotLogin()
   async getPublicKey() {
     const key = new NodeRSA({ b: 512 });
     const publicKey = key.exportKey('public');
     const privateKey = key.exportKey('private');
     await this.redisService.set(`publicKey:${publicKey}`, privateKey);
     return publicKey;
+  }
+
+  @Get('/current/user')
+  async getCurrentUser(): Promise<UserVO> {
+    const user = await this.userService.getById(this.ctx.userInfo.userId);
+    return user.toVO();
+  }
+
+  @Post('/logout')
+  async logout(): Promise<boolean> {
+    // 清除token和refreshToken
+    const res = await this.redisService
+      .multi()
+      .del(`token:${this.ctx.token}`)
+      .del(`refreshToken:${this.ctx.userInfo.refreshToken}`)
+      .exec();
+
+    if (res.some(item => item[0])) {
+      throw R.error('退出登录失败');
+    }
+
+    return true;
   }
 }

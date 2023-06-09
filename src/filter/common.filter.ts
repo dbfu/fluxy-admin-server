@@ -10,7 +10,6 @@ export class CommonErrorFilter {
     const i18nService = await ctx.requestContext.getAsync(MidwayI18nService);
     // 翻译
     const message = i18nService.translate(err.message) || err.message;
-    // 未捕获的错误，是系统错误，错误码是500
     ctx.status = 400;
     return {
       code: 400,

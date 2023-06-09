@@ -10,6 +10,8 @@ import { TokenVO } from '../vo/token';
 import { TokenConfig } from '../../../interface/token.config';
 import { RedisService } from '@midwayjs/redis';
 import { uuid } from '../../../utils/uuid';
+import { RefreshTokenDTO } from '../dto/refresh.token';
+import { Context } from '@midwayjs/core';
 
 @Provide()
 export class AuthService {
@@ -19,6 +21,8 @@ export class AuthService {
   tokenConfig: TokenConfig;
   @Inject()
   redisService: RedisService;
+  @Inject()
+  ctx: Context;
 
   async login(loginDTO: LoginDTO): Promise<TokenVO> {
     const { accountNumber } = loginDTO;
@@ -48,7 +52,7 @@ export class AuthService {
     // multi可以实现redis指令并发执行
     await this.redisService
       .multi()
-      .set(`token:${token}`, user.id)
+      .set(`token:${token}`, JSON.stringify({ userId: user.id, refreshToken }))
       .expire(`token:${token}`, expire)
       .set(`refreshToken:${refreshToken}`, user.id)
       .expire(`refreshToken:${refreshToken}`, refreshExpire)
@@ -59,6 +63,37 @@ export class AuthService {
       token,
       refreshExpire,
       refreshToken,
+    } as TokenVO;
+  }
+
+  async refreshToken(refreshToken: RefreshTokenDTO): Promise<TokenVO> {
+    const userId = await this.redisService.get(
+      `refreshToken:${refreshToken.refreshToken}`
+    );
+
+    if (!userId) {
+      throw R.error('用户凭证已过期，请重新登录！');
+    }
+
+    const { expire } = this.tokenConfig;
+
+    const token = uuid();
+
+    await this.redisService
+      .multi()
+      .set(`token:${token}`, JSON.stringify({ userId, refreshToken }))
+      .expire(`token:${token}`, expire)
+      .exec();
+
+    const refreshExpire = await this.redisService.ttl(
+      `refreshToken:${refreshToken.refreshToken}`
+    );
+
+    return {
+      expire,
+      token,
+      refreshExpire,
+      refreshToken: refreshToken.refreshToken,
     } as TokenVO;
   }
 }

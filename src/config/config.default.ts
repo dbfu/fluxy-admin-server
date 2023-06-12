@@ -1,6 +1,8 @@
 import { MidwayConfig } from '@midwayjs/core';
 import * as redisStore from 'cache-manager-ioredis';
 import { TokenConfig } from '../interface/token.config';
+import { env } from 'process';
+import { MinioConfig } from '../interface';
 
 export default {
   // use for cookie sign key, should change to your own and keep security
@@ -16,13 +18,13 @@ export default {
          * 单数据库实例
          */
         type: 'mysql',
-        host: 'localhost', // 数据库ip地址，本地就写localhost
+        host: env.DB_HOST || 'localhost', // 数据库ip地址，本地就写localhost
         port: 3306,
-        username: 'root',
-        password: '12345678',
+        username: env.DB_USERNAME || 'root',
+        password: env.DB_PASSWORD || '12345678',
         database: 'fluxy-admin', // 数据库名称
         synchronize: true, // 如果第一次使用，不存在表，有同步的需求可以写 true，注意会丢数据
-        logging: false,
+        logging: true,
         // 扫描entity文件夹
         entities: ['**/entity/*{.ts,.js}'],
         timezone: '+00:00',
@@ -32,7 +34,8 @@ export default {
   redis: {
     client: {
       port: 6379, // Redis port
-      host: 'localhost', // Redis host
+      host: env.REDIS_HOST || 'localhost', // Redis host
+      password: env.REDIS_PASSWORD || '',
       db: 0,
     },
   },
@@ -56,9 +59,9 @@ export default {
   cache: {
     store: redisStore,
     options: {
-      host: 'localhost', // default value
+      host: env.REDIS_HOST || 'localhost', // default value
       port: 6379, // default value
-      password: '',
+      password: env.REDIS_PASSWORD || '',
       db: 0,
       keyPrefix: 'cache:',
       ttl: 100,
@@ -79,4 +82,12 @@ export default {
     expirationTime: 3600,
     idPrefix: 'captcha',
   },
+  minio: {
+    endPoint: 'localhost',
+    port: 9002,
+    useSSL: false,
+    accessKey: 'root',
+    secretKey: '12345678',
+    bucketName: 'fluxy-admin',
+  } as MinioConfig,
 } as MidwayConfig;

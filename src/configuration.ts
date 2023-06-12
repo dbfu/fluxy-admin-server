@@ -8,12 +8,14 @@ import * as redis from '@midwayjs/redis';
 import * as swagger from '@midwayjs/swagger';
 import * as i18n from '@midwayjs/i18n';
 import * as cache from '@midwayjs/cache';
+import * as upload from '@midwayjs/upload';
 // import { DefaultErrorFilter } from './filter/default.filter';
 import { NotFoundFilter } from './filter/notfound.filter';
 import { AuthMiddleware } from './middleware/auth';
 import { ValidateErrorFilter } from './filter/validate.filter';
 import { CommonErrorFilter } from './filter/common.filter';
 import { UnauthorizedErrorFilter } from './filter/unauthorized.filter';
+import { DefaultErrorFilter } from './filter/default.filter';
 
 @Configuration({
   imports: [
@@ -23,6 +25,7 @@ import { UnauthorizedErrorFilter } from './filter/unauthorized.filter';
     orm,
     redis,
     cache,
+    upload,
     {
       component: swagger,
       enabledEnvironment: ['local'],
@@ -47,6 +50,7 @@ export class ContainerLifeCycle {
       CommonErrorFilter,
       NotFoundFilter,
       UnauthorizedErrorFilter,
+      DefaultErrorFilter,
     ]);
   }
 }

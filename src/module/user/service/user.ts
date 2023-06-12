@@ -1,6 +1,6 @@
-import { Provide } from '@midwayjs/decorator';
+import { Inject, Provide } from '@midwayjs/decorator';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { omit } from 'lodash';
 
@@ -8,11 +8,15 @@ import { BaseService } from '../../../common/base.service';
 import { UserEntity } from '../entity/user';
 import { R } from '../../../common/base.error.util';
 import { UserVO } from '../vo/user';
+import { FileService } from '../../file/service/file';
+import { FileEntity } from '../../file/entity/file';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
   @InjectEntityModel(UserEntity)
   userModel: Repository<UserEntity>;
+  @Inject()
+  fileService: FileService;
 
   getModel(): Repository<UserEntity> {
     return this.userModel;
@@ -46,6 +50,10 @@ export class UserService extends BaseService<UserEntity> {
 
     await this.userModel.save(entity);
 
+    if (entity.avatar) {
+      await this.fileService.setPKValue(entity.avatar, entity.id);
+    }
+
     // 把entity中的password移除返回给前端
     return omit(entity, ['password']) as UserVO;
   }
@@ -73,5 +81,26 @@ export class UserService extends BaseService<UserEntity> {
     await this.userModel.save(entity);
 
     return omit(entity, ['password']) as UserVO;
+  }
+
+  async page<T>(page = 0, pageSize = 10, where?: FindOptionsWhere<T>) {
+    const [data, total] = await this.userModel
+      .createQueryBuilder('t')
+      .leftJoinAndMapOne(
+        't.avatarEntity',
+        FileEntity,
+        'file',
+        'file.id = t.avatar'
+      )
+      .where(where)
+      .skip(page)
+      .take(page * pageSize)
+      .orderBy('t.createDate', 'DESC')
+      .getManyAndCount();
+
+    return {
+      data: data.map(entity => entity.toVO()),
+      total,
+    };
   }
 }

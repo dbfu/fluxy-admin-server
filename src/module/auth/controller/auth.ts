@@ -107,8 +107,7 @@ export class AuthController {
 
   @Get('/current/user')
   async getCurrentUser(): Promise<UserVO> {
-    const user = await this.userService.getById(this.ctx.userInfo.userId);
-    return user.toVO();
+    return await this.authService.getUserById(this.ctx.userInfo.userId);
   }
 
   @Post('/logout')

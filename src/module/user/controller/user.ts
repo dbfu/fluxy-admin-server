@@ -70,9 +70,4 @@ export class UserController {
 
     return await this.userService.page(page, size, query);
   }
-
-  @Get('/list', { description: '查询全部' })
-  async list() {
-    return await this.userService.list();
-  }
 }

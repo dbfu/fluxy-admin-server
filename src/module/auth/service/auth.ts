@@ -12,6 +12,7 @@ import { RedisService } from '@midwayjs/redis';
 import { uuid } from '../../../utils/uuid';
 import { RefreshTokenDTO } from '../dto/refresh.token';
 import { Context } from '@midwayjs/core';
+import { FileEntity } from '../../file/entity/file';
 
 @Provide()
 export class AuthService {
@@ -95,5 +96,20 @@ export class AuthService {
       refreshExpire,
       refreshToken: refreshToken.refreshToken,
     } as TokenVO;
+  }
+
+  async getUserById(userId: number) {
+    const entity = await this.userModel
+      .createQueryBuilder('t')
+      .leftJoinAndMapOne(
+        't.avatarEntity',
+        FileEntity,
+        'file',
+        'file.id = t.avatar'
+      )
+      .where('t.id = :id', { id: userId })
+      .getOne();
+
+    return entity.toVO();
   }
 }

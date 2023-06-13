@@ -7,7 +7,7 @@ export class FileEntity extends BaseEntity {
   fileName?: string;
   @Column({ comment: '文件路径' })
   filePath?: string;
-  @Column({ comment: '外健名称' })
+  @Column({ comment: '外健名称', nullable: true })
   pkName: string;
   @Column({ comment: '外健值', nullable: true })
   pkValue?: number;

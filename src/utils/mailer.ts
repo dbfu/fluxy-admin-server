@@ -7,8 +7,8 @@ export const sendMail = async () => {
     port: 465,
     secure: true, // true for 465, false for other ports
     auth: {
-      user: '876809592@qq.com', // 发送方邮箱的账号
-      pass: 'wlmztowclouybebc', // 邮箱授权密码
+      user: '', // 发送方邮箱的账号
+      pass: '', // 邮箱授权密码
     },
   });
 

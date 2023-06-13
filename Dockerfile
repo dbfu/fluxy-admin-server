@@ -18,7 +18,7 @@ COPY --from=build /app/package.json ./
 
 ENV TZ="Asia/Shanghai"
 
-RUN npm install --omit=dev --registry=https://registry.npm.taobao.org
+RUN npm install --omit=dev
 
 # 如果端口更换，这边可以更新一下
 EXPOSE 7001

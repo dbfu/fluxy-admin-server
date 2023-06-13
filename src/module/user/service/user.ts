@@ -51,7 +51,11 @@ export class UserService extends BaseService<UserEntity> {
     await this.userModel.save(entity);
 
     if (entity.avatar) {
-      await this.fileService.setPKValue(entity.avatar, entity.id);
+      await this.fileService.setPKValue(
+        entity.avatar,
+        entity.id,
+        'user_avatar'
+      );
     }
 
     // 把entity中的password移除返回给前端

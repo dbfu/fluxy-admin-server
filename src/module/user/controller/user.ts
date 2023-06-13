@@ -15,12 +15,15 @@ import { UserDTO } from '../dto/user';
 import { UserService } from '../service/user';
 import { FindOptionsWhere, Like } from 'typeorm';
 import { UserEntity } from '../entity/user';
+import { FileService } from '../../file/service/file';
 
 @Provide()
 @Controller('/user')
 export class UserController {
   @Inject()
   userService: UserService;
+  @Inject()
+  fileService: FileService;
 
   @Post('/', { description: '新建' })
   async create(@Body(ALL) data: UserDTO) {
@@ -35,8 +38,20 @@ export class UserController {
     user.nickName = data.nickName;
     user.phoneNumber = data.phoneNumber;
     user.userName = data.userName;
-    user.avatar = data.avatar;
     user.sex = data.sex;
+
+    if (user.avatar !== data.avatar) {
+      if (user.avatar) {
+        await Promise.all([
+          this.fileService.setPKValue(data.avatar, user.id, 'user_avatar'),
+          this.fileService.setPKValue(user.avatar, null, 'user_avatar'),
+        ]);
+      } else {
+        await this.fileService.setPKValue(data.avatar, user.id, 'user_avatar');
+      }
+      user.avatar = data.avatar;
+    }
+
     return await this.userService.edit(user);
   }
 

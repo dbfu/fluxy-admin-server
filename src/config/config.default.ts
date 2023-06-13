@@ -83,11 +83,20 @@ export default {
     idPrefix: 'captcha',
   },
   minio: {
-    endPoint: 'localhost',
-    port: 9002,
+    endPoint: env.MINIO_HOST || 'localhost',
+    port: env.MINIO_PORT || 9002,
     useSSL: false,
-    accessKey: 'root',
-    secretKey: '12345678',
-    bucketName: 'fluxy-admin',
+    accessKey: env.ACCESS_KEY || 'root',
+    secretKey: env.SECRET_KEY || '12345678',
+    bucketName: env.BUCKET_NAME || 'fluxy-admin',
   } as MinioConfig,
+  bull: {
+    defaultQueueOptions: {
+      redis: {
+        port: 6379,
+        host: env.REDIS_HOST || 'localhost',
+        password: env.REDIS_PASSWORD || '',
+      },
+    },
+  },
 } as MidwayConfig;

@@ -9,6 +9,7 @@ import * as swagger from '@midwayjs/swagger';
 import * as i18n from '@midwayjs/i18n';
 import * as cache from '@midwayjs/cache';
 import * as upload from '@midwayjs/upload';
+import * as bull from '@midwayjs/bull';
 // import { DefaultErrorFilter } from './filter/default.filter';
 import { NotFoundFilter } from './filter/notfound.filter';
 import { AuthMiddleware } from './middleware/auth';
@@ -26,6 +27,7 @@ import { DefaultErrorFilter } from './filter/default.filter';
     redis,
     cache,
     upload,
+    bull,
     {
       component: swagger,
       enabledEnvironment: ['local'],

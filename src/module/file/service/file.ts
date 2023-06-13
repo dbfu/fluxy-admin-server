@@ -6,7 +6,6 @@ import { FileEntity } from '../entity/file';
 import { UploadFileInfo } from '@midwayjs/upload';
 import { MinioClient } from '../../../autoload/minio';
 import { MinioConfig } from '../../../interface';
-import { FileDTO } from '../dto/file';
 
 @Provide()
 export class FileService extends BaseService<FileEntity> {
@@ -23,14 +22,13 @@ export class FileService extends BaseService<FileEntity> {
     return this.fileModel;
   }
 
-  async upload(file: UploadFileInfo<string>, fields: FileDTO) {
+  async upload(file: UploadFileInfo<string>) {
     const fileName = `${new Date().getTime()}_${file.filename}`;
 
     const data = await this.defaultDataSource.transaction(async manager => {
       const fileEntity = new FileEntity();
       fileEntity.fileName = fileName;
       fileEntity.filePath = `/file/${this.minioConfig.bucketName}/${fileName}`;
-      fileEntity.pkName = fields.pkName;
       await manager.save(FileEntity, fileEntity);
 
       await this.minioClient.fPutObject(
@@ -45,10 +43,24 @@ export class FileService extends BaseService<FileEntity> {
     return data;
   }
 
-  async setPKValue(id: number, pkValue: number) {
+  async setPKValue(id: number, pkValue: number, pkName: string) {
     const entity = await this.getById(id);
+    if (!entity) return;
     entity.pkValue = pkValue;
+    entity.pkName = pkName;
     await this.fileModel.save(entity);
     return entity;
+  }
+
+  async clearEmptyPKValueFiles() {
+    const curDate = new Date();
+    curDate.setDate(curDate.getDate() - 1);
+
+    await this.fileModel
+      .createQueryBuilder()
+      .where('createDate < :date', { date: curDate })
+      .andWhere('pkValue is null')
+      .delete()
+      .execute();
   }
 }

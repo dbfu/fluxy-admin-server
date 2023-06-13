@@ -84,7 +84,7 @@ export default {
   },
   minio: {
     endPoint: env.MINIO_HOST || 'localhost',
-    port: env.MINIO_PORT || 9002,
+    port: env.MINIO_PORT ? Number(env.MINIO_PORT) : 9002,
     useSSL: false,
     accessKey: env.MINIO_ACCESS_KEY || 'root',
     secretKey: env.MINIO_SECRET_KEY || '12345678',

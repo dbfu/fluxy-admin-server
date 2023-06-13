@@ -43,6 +43,9 @@ dependencies:
   '@midwayjs/validate':
     specifier: ^3.11.6
     version: 3.11.6
+  '@types/nodemailer':
+    specifier: ^6.4.8
+    version: 6.4.8
   bcryptjs:
     specifier: ^2.4.3
     version: 2.4.3
@@ -79,6 +82,9 @@ dependencies:
   node-rsa:
     specifier: ^1.1.1
     version: 1.1.1
+  nodemailer:
+    specifier: ^6.9.3
+    version: 6.9.3
   svg-captcha:
     specifier: ^1.4.0
     version: 1.4.0
@@ -1459,7 +1465,12 @@ packages:
 
   /@types/node@14.0.0:
     resolution: {integrity: sha512-BZHGudjgZ8cweaQC2Q7hKpZNT2sq//NNbc7KcuTdti10S/tKIXpqiAgzZZFdwm6uUdRE9jy6UYSESNvB5rmFgA==}
-    dev: true
+
+  /@types/nodemailer@6.4.8:
+    resolution: {integrity: sha512-oVsJSCkqViCn8/pEu2hfjwVO+Gb3e+eTWjg3PcjeFKRItfKpKwHphQqbYmPQrlMk+op7pNNWPbsJIEthpFN/OQ==}
+    dependencies:
+      '@types/node': 14.0.0
+    dev: false
 
   /@types/normalize-package-data@2.4.1:
     resolution: {integrity: sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==}
@@ -4598,6 +4609,11 @@ packages:
     resolution: {integrity: sha512-Jd4cvbJMryN21r5HgxQOpMEqv+ooke/korixNNK3mGqfGJmy0M77WDDzo/05969+OkMy3XW1UuZsSmW9KQm7Fw==}
     dependencies:
       asn1: 0.2.6
+    dev: false
+
+  /nodemailer@6.9.3:
+    resolution: {integrity: sha512-fy9v3NgTzBngrMFkDsKEj0r02U7jm6XfC3b52eoNV+GCrGj+s8pt5OqhiJdWKuw51zCTdiNR/IUD1z33LIIGpg==}
+    engines: {node: '>=6.0.0'}
     dev: false
 
   /normalize-package-data@2.5.0:

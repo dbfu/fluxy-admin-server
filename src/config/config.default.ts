@@ -86,9 +86,9 @@ export default {
     endPoint: env.MINIO_HOST || 'localhost',
     port: env.MINIO_PORT || 9002,
     useSSL: false,
-    accessKey: env.ACCESS_KEY || 'root',
-    secretKey: env.SECRET_KEY || '12345678',
-    bucketName: env.BUCKET_NAME || 'fluxy-admin',
+    accessKey: env.MINIO_ACCESS_KEY || 'root',
+    secretKey: env.MINIO_SECRET_KEY || '12345678',
+    bucketName: env.MINIO_BUCKET_NAME || 'fluxy-admin',
   } as MinioConfig,
   bull: {
     defaultQueueOptions: {

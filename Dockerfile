@@ -15,14 +15,14 @@ FROM keymetrics/pm2:16-jessie
 
 WORKDIR /app
 
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/bootstrap.js ./
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/script ./script
-
 ENV TZ="Asia/Shanghai"
 
 RUN npm install --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/bootstrap.js ./
+COPY --from=builder /app/script ./script
 
 EXPOSE 7001
 

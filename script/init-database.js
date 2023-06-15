@@ -8,6 +8,9 @@ const connection = mysql.createConnection({
 
 connection.connect(error => {
   if (error) {
+    console.log(`host: ${process.env.DB_HOST}`);
+    console.log(`user: ${process.env.DB_USERNAME}`);
+    console.log(`password: ${process.env.DB_PASSWORD}`);
     console.log('数据连接失败');
     return;
   }

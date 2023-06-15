@@ -2,13 +2,12 @@ const mysql = require('mysql2');
 
 let count = 0;
 
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USERNAME || 'root',
-  password: process.env.DB_PASSWORD || '12345678',
-});
-
 function connect() {
+  const connection = mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USERNAME || 'root',
+    password: process.env.DB_PASSWORD || '12345678',
+  });
   connection.connect(error => {
     if (error) {
       console.log(`host: ${process.env.DB_HOST}`);

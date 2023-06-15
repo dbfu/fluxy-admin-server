@@ -48,27 +48,6 @@ export class ContainerLifeCycle {
   @Inject()
   dataSourceManager: TypeORMDataSourceManager;
 
-  async onConfigLoad(): Promise<void> {
-    const tempDataSource = await this.dataSourceManager.createInstance(
-      this.typeormConfig,
-      'temp'
-    );
-
-    if (tempDataSource) {
-      const hasDatabase = await tempDataSource
-        .createQueryRunner()
-        .hasDatabase(this.typeormConfig.database);
-
-      if (!hasDatabase) {
-        await tempDataSource
-          .createQueryRunner()
-          .createDatabase(this.typeormConfig.database);
-      }
-
-      tempDataSource.destroy();
-    }
-  }
-
   async onReady() {
     // add middleware
     this.app.useMiddleware([AuthMiddleware]);

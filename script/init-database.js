@@ -12,6 +12,7 @@ connection.connect(error => {
     console.log(`user: ${process.env.DB_USERNAME}`);
     console.log(`password: ${process.env.DB_PASSWORD}`);
     console.log('数据连接失败');
+    console.log(error);
     return;
   }
   connection.query(

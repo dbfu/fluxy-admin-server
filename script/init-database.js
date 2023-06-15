@@ -18,7 +18,7 @@ function connect() {
       console.log(error);
 
       setTimeout(() => {
-        if (count >= 10) {
+        if (count >= 60) {
           console.log('数据连接失败');
           return;
         }

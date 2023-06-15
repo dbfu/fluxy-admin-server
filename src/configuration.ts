@@ -1,4 +1,4 @@
-import { Configuration, App } from '@midwayjs/core';
+import { Configuration, App, Config, Inject } from '@midwayjs/core';
 import * as koa from '@midwayjs/koa';
 import * as validate from '@midwayjs/validate';
 import * as info from '@midwayjs/info';
@@ -17,6 +17,7 @@ import { ValidateErrorFilter } from './filter/validate.filter';
 import { CommonErrorFilter } from './filter/common.filter';
 import { UnauthorizedErrorFilter } from './filter/unauthorized.filter';
 import { DefaultErrorFilter } from './filter/default.filter';
+import { TypeORMDataSourceManager } from '@midwayjs/typeorm';
 
 @Configuration({
   imports: [
@@ -42,6 +43,31 @@ import { DefaultErrorFilter } from './filter/default.filter';
 export class ContainerLifeCycle {
   @App()
   app: koa.Application;
+  @Config('typeorm.dataSource.default')
+  typeormConfig;
+  @Inject()
+  dataSourceManager: TypeORMDataSourceManager;
+
+  async onConfigLoad(): Promise<void> {
+    const tempDataSource = await this.dataSourceManager.createInstance(
+      this.typeormConfig,
+      'temp'
+    );
+
+    if (tempDataSource) {
+      const hasDatabase = await tempDataSource
+        .createQueryRunner()
+        .hasDatabase(this.typeormConfig.database);
+
+      if (!hasDatabase) {
+        await tempDataSource
+          .createQueryRunner()
+          .createDatabase(this.typeormConfig.database);
+      }
+
+      tempDataSource.destroy();
+    }
+  }
 
   async onReady() {
     // add middleware

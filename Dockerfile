@@ -9,6 +9,8 @@ RUN pnpm install
 
 COPY . .
 
+CMD ["npm", "run", "migration:run"]
+
 RUN pnpm run build
 
 FROM keymetrics/pm2:16-jessie
@@ -18,7 +20,7 @@ WORKDIR /app
 COPY --from=builder /app/package.json ./
 ENV TZ="Asia/Shanghai"
 
-RUN npm install
+RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/bootstrap.js ./

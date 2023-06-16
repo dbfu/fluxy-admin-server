@@ -15,6 +15,7 @@ FROM gplane/pnpm:8.4.0
 
 WORKDIR /app
 
+RUN pnpm setup
 RUN pnpm add pm2 -g
 
 COPY --from=builder /app/package.json ./

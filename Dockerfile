@@ -11,15 +11,14 @@ COPY . .
 
 RUN pnpm run build
 
-FROM gplane/pnpm:8.4.0
+FROM keymetrics/pm2:16-jessie
 
 WORKDIR /app
 
-RUN pnpm setup
-RUN pnpm add pm2 -g
-
 COPY --from=builder /app/package.json ./
 ENV TZ="Asia/Shanghai"
+
+RUN npm install pnpm -g
 
 RUN pnpm install --prod
 

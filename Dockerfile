@@ -18,7 +18,7 @@ WORKDIR /app
 COPY --from=builder /app/package.json ./
 ENV TZ="Asia/Shanghai"
 
-RUN npm install --omit=dev
+RUN npm install
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/bootstrap.js ./

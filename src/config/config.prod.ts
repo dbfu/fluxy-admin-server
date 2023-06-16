@@ -5,6 +5,8 @@ import { env } from 'process';
 import { TokenConfig } from '../interface/token.config';
 import { MinioConfig } from '../interface';
 
+import typeormConfig from './typeorm.prod';
+
 export default {
   // use for cookie sign key, should change to your own and keep security
   keys: '1684629293601_5943',
@@ -12,27 +14,7 @@ export default {
     port: 7001,
     globalPrefix: '/api',
   },
-  typeorm: {
-    dataSource: {
-      default: {
-        type: 'mysql',
-        host: env.DB_HOST,
-        port: 3306,
-        username: env.DB_USERNAME,
-        password: env.DB_PASSWORD,
-        database: env.DB_NAME || 'fluxy-admin',
-        synchronize: false,
-        logging: false,
-        // 扫描entity文件夹
-        entities: ['**/entity/*{.ts,.js}'],
-        timezone: '+00:00',
-        migrations: ['**/migration/*.ts'],
-        cli: {
-          migrationsDir: 'migration',
-        },
-      },
-    },
-  },
+  typeorm: typeormConfig,
   redis: {
     client: {
       port: 6379, // Redis port

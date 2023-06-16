@@ -16,6 +16,7 @@ FROM keymetrics/pm2:16-jessie
 WORKDIR /app
 
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/pnpm-lock.yaml ./
 ENV TZ="Asia/Shanghai"
 
 RUN npm install pnpm -g

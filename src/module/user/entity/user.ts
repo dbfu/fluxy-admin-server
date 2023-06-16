@@ -20,6 +20,10 @@ export class UserEntity extends BaseEntity {
   sex?: number;
   @Column({ comment: '密码' })
   password: string;
+  @Column({ comment: '测试字段' })
+  name: string;
+  @Column({ comment: '测试字段1' })
+  name1: string;
   toVO(): UserVO {
     const userVO = omit<UserEntity>(this, ['password', 'avatar']) as UserVO;
     userVO.avatarPath = this.avatarEntity?.filePath;

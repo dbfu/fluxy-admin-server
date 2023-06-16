@@ -94,15 +94,3 @@ jobs:
           PRIVATE_SSH_KEY: ${{ secrets.SERVER_KEY }}
           # command to be executed
           COMMAND: cd /root && ./run.sh
-
-      - name: 'Send mail'
-        uses: dawidd6/action-send-mail@master
-        with:
-          server_address: smtp.163.com
-          server_port: 465
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: fluxy-admin-server发布成功
-          body: fluxy-admin-server发布成功
-          to: ${{ secrets.RECEIVER }}
-          from: GitHub Actions

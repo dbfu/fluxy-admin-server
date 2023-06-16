@@ -23,6 +23,7 @@ RUN npm install --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/bootstrap.js ./
 COPY --from=builder /app/script ./script
+COPY --from=builder /app/src/config ./config
 
 EXPOSE 7001
 

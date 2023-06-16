@@ -26,9 +26,9 @@ RUN pnpm install
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/bootstrap.js ./
 COPY --from=builder /app/script ./script
-COPY --from=builder /app/src/config ./config
+COPY --from=builder /app/src/config ./src/config
 COPY --from=builder /app/tsconfig.json ./
-COPY --from=builder /app/src/migration ./src/
+COPY --from=builder /app/src/migration ./src/migration
 
 EXPOSE 7001
 

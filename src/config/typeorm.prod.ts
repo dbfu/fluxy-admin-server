@@ -8,7 +8,7 @@ export default {
         host: env.DB_HOST || 'localhost',
         port: 3306,
         username: env.DB_USERNAME || 'root',
-        password: env.DB_PASSWORD || '12345678',
+        password: env.DB_PASSWORD || 'Fzz#160903',
         database: env.DB_NAME || 'fluxy-admin',
         synchronize: false,
         logging: false,

@@ -21,7 +21,7 @@ ENV TZ="Asia/Shanghai"
 
 RUN npm install pnpm -g
 
-RUN pnpm install
+RUN pnpm install --prod
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/bootstrap.js ./

@@ -1,7 +1,8 @@
 import { MidwayConfig } from '@midwayjs/core';
 import * as redisStore from 'cache-manager-ioredis';
-import { TokenConfig } from '../interface/token.config';
 import { env } from 'process';
+
+import { TokenConfig } from '../interface/token.config';
 import { MinioConfig } from '../interface';
 
 export default {
@@ -14,17 +15,14 @@ export default {
   typeorm: {
     dataSource: {
       default: {
-        /**
-         * 单数据库实例
-         */
         type: 'mysql',
-        host: env.DB_HOST || 'localhost', // 数据库ip地址，本地就写localhost
+        host: env.DB_HOST,
         port: 3306,
-        username: env.DB_USERNAME || 'root',
-        password: env.DB_PASSWORD || '12345678',
-        database: 'fluxy-admin', // 数据库名称
-        synchronize: true, // 如果第一次使用，不存在表，有同步的需求可以写 true，注意会丢数据
-        logging: true,
+        username: env.DB_USERNAME,
+        password: env.DB_PASSWORD,
+        database: env.DB_NAME || 'fluxy-admin',
+        synchronize: false,
+        logging: false,
         // 扫描entity文件夹
         entities: ['**/entity/*{.ts,.js}'],
         timezone: '+00:00',
@@ -38,13 +36,12 @@ export default {
   redis: {
     client: {
       port: 6379, // Redis port
-      host: env.REDIS_HOST || 'localhost', // Redis host
+      host: env.REDIS_HOST, // Redis host
       password: env.REDIS_PASSWORD || '',
       db: 0,
     },
   },
   i18n: {
-    // 把你的翻译文本放到这里
     localeTable: {
       en_US: require('../locales/en_US'),
       zh_CN: require('../locales/zh_CN'),
@@ -87,18 +84,18 @@ export default {
     idPrefix: 'captcha',
   },
   minio: {
-    endPoint: env.MINIO_HOST || 'localhost',
+    endPoint: env.MINIO_HOST,
     port: env.MINIO_PORT ? Number(env.MINIO_PORT) : 9002,
     useSSL: false,
-    accessKey: env.MINIO_ACCESS_KEY || 'root',
-    secretKey: env.MINIO_SECRET_KEY || '12345678',
-    bucketName: env.MINIO_BUCKET_NAME || 'fluxy-admin',
+    accessKey: env.MINIO_ACCESS_KEY,
+    secretKey: env.MINIO_SECRET_KEY,
+    bucketName: env.MINIO_BUCKET_NAME,
   } as MinioConfig,
   bull: {
     defaultQueueOptions: {
       redis: {
         port: 6379,
-        host: env.REDIS_HOST || 'localhost',
+        host: env.REDIS_HOST,
         password: env.REDIS_PASSWORD || '',
       },
     },

@@ -13,12 +13,12 @@ function connect() {
       console.log(`host: ${process.env.DB_HOST}`);
       console.log(`user: ${process.env.DB_USERNAME}`);
       console.log(`password: ${process.env.DB_PASSWORD}`);
-      console.log('数据连接失败，正在重新连接');
+      console.log('数据库连接失败，正在重新连接');
       console.log(error);
 
       setTimeout(() => {
         if (count >= 60) {
-          console.log('数据连接失败');
+          console.log('数据库连接失败，请检查数据库服务是否正常启动。');
           return;
         }
         connect();
@@ -27,7 +27,9 @@ function connect() {
       return;
     }
     connection.query(
-      "SELECT * FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'fluxy-admin'",
+      `SELECT * FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '${
+        process.env.DB_PASSWORD || 'fluxy-admin'
+      }'`,
       (err, result) => {
         if (err) {
           console.log(err);
@@ -35,10 +37,15 @@ function connect() {
         }
         if (result.length === 0) {
           console.log('检测到数据库不存在，正在为你创建数据库...');
-          connection.query('CREATE DATABASE `fluxy-admin`');
+          connection.query('CREATE DATABASE `fluxy-admin`', () => {
+            console.log('数据库创建成功');
+            connection.destroy();
+            process.exit();
+          });
+        } else {
+          connection.destroy();
+          process.exit();
         }
-        connection.destroy();
-        process.exit();
       }
     );
   });

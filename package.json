@@ -65,7 +65,7 @@
     "ci": "npm run cov",
     "build": "midway-bin build -c",
     "migration:generate": "npx mwtypeorm migration:generate -d ./src/config/config.default.ts ./src/migration/migration",
-    "migration:run": "ts-node ./node_modules/@midwayjs/typeorm/cli.js migration:run -d ./src/config/typeorm.prod.ts"
+    "migration:run": "node ./node_modules/@midwayjs/typeorm/cli.js migration:run -d ./src/config/typeorm.prod.ts"
   },
   "midway-bin-clean": [
     ".vscode/.tsbuildinfo",

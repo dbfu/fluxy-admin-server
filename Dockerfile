@@ -11,14 +11,16 @@ COPY . .
 
 RUN pnpm run build
 
-FROM keymetrics/pm2:16-jessie
+FROM gplane/pnpm:8.4.0
 
 WORKDIR /app
+
+RUN pnpm add pm2 -g
 
 COPY --from=builder /app/package.json ./
 ENV TZ="Asia/Shanghai"
 
-RUN npm install --omit=dev
+RUN pnpm install --prod
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/bootstrap.js ./

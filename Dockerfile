@@ -9,7 +9,7 @@ RUN pnpm install
 
 COPY . .
 
-CMD ["npm", "run", "migration:run"]
+RUN npm run migration:run
 
 RUN pnpm run build
 

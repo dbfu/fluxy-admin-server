@@ -7,7 +7,7 @@ export default {
         type: 'mysql',
         host: env.DB_HOST,
         port: 3306,
-        username: env.DB_USERNAME,
+        username: env.DB_USERNAME || 'root',
         password: env.DB_PASSWORD,
         database: env.DB_NAME || 'fluxy-admin',
         synchronize: false,

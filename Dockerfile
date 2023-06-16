@@ -28,6 +28,7 @@ COPY --from=builder /app/bootstrap.js ./
 COPY --from=builder /app/script ./script
 COPY --from=builder /app/src/config ./config
 COPY --from=builder /app/tsconfig.json ./
+COPY --from=builder /app/src/migration ./src/
 
 EXPOSE 7001
 

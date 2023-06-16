@@ -14,6 +14,9 @@ export class Migration1686884629903 implements MigrationInterface {
     await queryRunner.query(
       "ALTER TABLE `sys_user` ADD `avatar` int NULL COMMENT '头像'"
     );
+    await queryRunner.query(
+      "insert into `sys_user` (userName, nickName, password) values ('admin', '管理员', '$2a$10$.OggYJaVe1OCLVSB/9wqk.bYYaSdvcHu7dcc0zpewfpzNKEDPh2Tu')"
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

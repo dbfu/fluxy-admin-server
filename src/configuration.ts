@@ -17,9 +17,6 @@ import { ValidateErrorFilter } from './filter/validate.filter';
 import { CommonErrorFilter } from './filter/common.filter';
 import { UnauthorizedErrorFilter } from './filter/unauthorized.filter';
 import { DefaultErrorFilter } from './filter/default.filter';
-import { InjectEntityModel } from '@midwayjs/typeorm';
-import { UserEntity } from './module/user/entity/user';
-import { Repository } from 'typeorm';
 
 @Configuration({
   imports: [
@@ -45,8 +42,6 @@ import { Repository } from 'typeorm';
 export class ContainerLifeCycle {
   @App()
   app: koa.Application;
-  @InjectEntityModel(UserEntity)
-  userModel: Repository<UserEntity>;
 
   async onReady() {
     // add middleware
@@ -59,22 +54,5 @@ export class ContainerLifeCycle {
       UnauthorizedErrorFilter,
       DefaultErrorFilter,
     ]);
-
-    console.log(this.userModel, 'this.userModel');
-
-    const userCount = await this.userModel.count();
-
-    if (userCount === 0) {
-      console.log('检测到管理员账号不存在，正在为你创建。');
-      const adminUser = new UserEntity();
-      adminUser.nickName = '管理员';
-      adminUser.password =
-        '$2a$10$.OggYJaVe1OCLVSB/9wqk.bYYaSdvcHu7dcc0zpewfpzNKEDPh2Tu';
-      adminUser.email = 'admin@qq.com';
-      adminUser.phoneNumber = '18144444444';
-      adminUser.userName = 'admin';
-
-      await this.userModel.save(adminUser);
-    }
   }
 }

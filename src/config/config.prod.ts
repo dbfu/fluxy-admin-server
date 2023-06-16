@@ -14,7 +14,7 @@ export default {
     port: 7001,
     globalPrefix: '/api',
   },
-  typeorm: typeormConfig,
+  typeorm: typeormConfig.typeorm,
   redis: {
     client: {
       port: 6379, // Redis port

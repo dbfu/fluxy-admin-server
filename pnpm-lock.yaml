@@ -94,6 +94,9 @@ dependencies:
   typeorm:
     specifier: ^0.3.16
     version: 0.3.16(mysql2@3.3.1)
+  typescript:
+    specifier: ~4.8.0
+    version: 4.8.2
 
 devDependencies:
   '@midwayjs/cli':
@@ -132,9 +135,6 @@ devDependencies:
   ts-jest:
     specifier: ^29.0.3
     version: 29.0.3(@babel/core@7.21.8)(jest@29.2.2)(typescript@4.8.2)
-  typescript:
-    specifier: ~4.8.0
-    version: 4.8.2
 
 packages:
 
@@ -5986,7 +5986,6 @@ packages:
     resolution: {integrity: sha512-C0I1UsrrDHo2fYI5oaCGbSejwX4ch+9Y5jTQELvovfmFkK3HHSZJB8MSJcWLmCUBzQBchCrZ9rMRV6GuNrvGtw==}
     engines: {node: '>=4.2.0'}
     hasBin: true
-    dev: true
 
   /unique-string@2.0.0:
     resolution: {integrity: sha512-uNaeirEPvpZWSgzwsPGtU2zVSTrn/8L5q/IexZmH0eH6SA73CmAA5U4GwORTxQAZs95TAXLNqeLoPPNO5gZfWg==}

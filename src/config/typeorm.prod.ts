@@ -5,10 +5,10 @@ export default {
     dataSource: {
       default: {
         type: 'mysql',
-        host: env.DB_HOST,
+        host: env.DB_HOST || 'localhost',
         port: 3306,
         username: env.DB_USERNAME || 'root',
-        password: env.DB_PASSWORD,
+        password: env.DB_PASSWORD || '12345678',
         database: env.DB_NAME || 'fluxy-admin',
         synchronize: false,
         logging: false,

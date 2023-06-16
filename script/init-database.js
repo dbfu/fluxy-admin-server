@@ -28,7 +28,7 @@ function connect() {
     }
     connection.query(
       `SELECT * FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '${
-        process.env.DB_PASSWORD || 'fluxy-admin'
+        process.env.DB_NAME || 'fluxy-admin'
       }'`,
       (err, result) => {
         if (err) {

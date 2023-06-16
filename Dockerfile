@@ -9,9 +9,6 @@ RUN pnpm install
 
 COPY . .
 
-RUN npm run db:init
-RUN npm run migration:run
-
 RUN pnpm run build
 
 FROM keymetrics/pm2:16-jessie

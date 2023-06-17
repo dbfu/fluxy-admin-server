@@ -64,7 +64,8 @@
     "lint:fix": "mwts fix",
     "ci": "npm run cov",
     "build": "midway-bin build -c",
-    "migration:generate": "node ./node_modules/@midwayjs/typeorm/cli.js migration:generate -d ./src/config/config.default.ts ./src/migration/migration",
+    "migration:generate:dev": "node ./node_modules/@midwayjs/typeorm/cli.js migration:generate -d ./src/config/config.default.ts ./src/migration/migration",
+    "migration:generate": "node ./node_modules/@midwayjs/typeorm/cli.js migration:generate -d ./src/config/typeorm.prod.ts ./src/migration/migration",
     "migration:run": "node ./node_modules/@midwayjs/typeorm/cli.js migration:run -d ./src/config/typeorm.prod.ts"
   },
   "midway-bin-clean": [

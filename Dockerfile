@@ -17,6 +17,7 @@ WORKDIR /app
 
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-lock.yaml ./
+COPY --from=builder /app/node_modules ./node_modules
 ENV TZ="Asia/Shanghai"
 
 RUN npm install pnpm -g

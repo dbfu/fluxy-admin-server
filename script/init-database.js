@@ -42,16 +42,15 @@ function connect() {
           console.log('检测到数据库不存在，正在为你创建数据库...');
           connection.query(`CREATE DATABASE \`${database}\``, () => {
             console.log('数据库创建成功');
-            connection.destroy();
             process.exit();
           });
         } else {
-          connection.destroy();
           process.exit();
         }
       }
     );
   });
+  connection.end();
 }
 
 connect();

@@ -57,7 +57,7 @@
   },
   "scripts": {
     "start": "node ./script/init-database && npm run migration:run && NODE_ENV=production pm2-runtime start ./bootstrap.js --name midway_app -i 4",
-    "dev": "node ./script/init-database && cross-env NODE_ENV=local midway-bin dev --ts",
+    "dev": "cross-env NODE_ENV=local midway-bin dev --ts",
     "test": "midway-bin test --ts",
     "cov": "midway-bin cov --ts",
     "lint": "mwts check",

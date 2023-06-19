@@ -110,6 +110,10 @@ export class AuthService {
       .where('t.id = :id', { id: userId })
       .getOne();
 
+    if (!entity) {
+      throw R.error('当前用户不存在！');
+    }
+
     return entity.toVO();
   }
 }

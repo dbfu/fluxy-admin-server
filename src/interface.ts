@@ -20,3 +20,13 @@ export interface MinioConfig {
   secretKey: string;
   bucketName: string;
 }
+
+export interface MailConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
+}

@@ -22,8 +22,10 @@ export class UserDTO extends BaseDTO<UserEntity> {
   @ApiProperty({ description: '邮箱' })
   @Rule(email.error(R.validateError('无效的邮箱格式')))
   email: string;
-  @ApiProperty({ description: '头像', nullable: true })
+  @ApiProperty({ description: '头像' })
   avatar?: number;
-  @ApiProperty({ description: '性别（0:女，1:男）', nullable: true })
+  @ApiProperty({ description: '性别（0:女，1:男）' })
   sex?: number;
+  @ApiProperty({ description: '邮箱验证码' })
+  emailCaptcha: string;
 }

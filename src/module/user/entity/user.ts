@@ -14,8 +14,6 @@ export class UserEntity extends BaseEntity {
   phoneNumber: string;
   @Column({ comment: '邮箱' })
   email: string;
-  @Column({ comment: '头像', nullable: true })
-  avatar?: number;
   @Column({ comment: '性别（0:女，1:男）', nullable: true })
   sex?: number;
   @Column({ comment: '密码' })

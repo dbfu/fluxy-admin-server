@@ -1,6 +1,6 @@
 import { Inject, Provide } from '@midwayjs/decorator';
-import { InjectEntityModel } from '@midwayjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
+import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { omit } from 'lodash';
 
@@ -10,20 +10,33 @@ import { R } from '../../../common/base.error.util';
 import { UserVO } from '../vo/user';
 import { FileService } from '../../file/service/file';
 import { FileEntity } from '../../file/entity/file';
+import { UserDTO } from '../dto/user';
+import { RedisService } from '@midwayjs/redis';
+import { MailService } from '../../../common/mail.service';
+import { uuid } from '../../../utils/uuid';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
   @InjectEntityModel(UserEntity)
   userModel: Repository<UserEntity>;
+  @InjectEntityModel(FileEntity)
+  fileModel: Repository<FileEntity>;
   @Inject()
   fileService: FileService;
+  @InjectDataSource()
+  defaultDataSource: DataSource;
+  @Inject()
+  redisService: RedisService;
+  @Inject()
+  mailService: MailService;
 
   getModel(): Repository<UserEntity> {
     return this.userModel;
   }
 
-  async create(entity: UserEntity): Promise<UserVO> {
-    const { userName, phoneNumber, email } = entity;
+  async createUser(userDTO: UserDTO) {
+    const entity = userDTO.toEntity();
+    const { userName, phoneNumber, email } = userDTO;
 
     let isExist = (await this.userModel.countBy({ userName })) > 0;
 
@@ -43,27 +56,54 @@ export class UserService extends BaseService<UserEntity> {
       throw R.error('当前邮箱已存在');
     }
 
-    // 添加用户的默认密码是123456，对密码进行加盐加密
-    const password = bcrypt.hashSync('123456', 10);
+    const emailCaptcha = await this.redisService.get(`emailCaptcha:${email}`);
 
-    entity.password = password;
-
-    await this.userModel.save(entity);
-
-    if (entity.avatar) {
-      await this.fileService.setPKValue(
-        entity.avatar,
-        entity.id,
-        'user_avatar'
-      );
+    if (emailCaptcha !== userDTO.emailCaptcha) {
+      throw R.error('邮箱验证码错误或已生效');
     }
+
+    // 随机生成密码，并发送到对应的邮箱中。
+    const password = uuid();
+
+    // 添加用户，对密码进行加盐加密
+    const hashPassword = bcrypt.hashSync(password, 10);
+
+    entity.password = hashPassword;
+
+    // 使用事物
+    await this.defaultDataSource.transaction(async manager => {
+      await manager.save(UserEntity, entity);
+
+      if (userDTO.avatar) {
+        await manager
+          .createQueryBuilder()
+          .update(FileEntity)
+          .set({
+            pkValue: entity.id,
+            pkName: 'user_avatar',
+          })
+          .where('id = :id', { id: userDTO.avatar })
+          .execute();
+      }
+
+      this.mailService.sendMail({
+        to: email,
+        subject: 'fluxy-admin平台账号创建成功',
+        html: `<div>
+        <p>${userDTO.nickName}，你的账号已开通成功</p>
+        <p>登录地址：<a href="https://fluxyadmin.cn/#/user/login">https://fluxyadmin.cn/#/user/login</a></p>
+        <p>登录账号：${userDTO.email}</p>
+        <p>登录密码：${password}</p>
+        </div>`,
+      });
+    });
 
     // 把entity中的password移除返回给前端
     return omit(entity, ['password']) as UserVO;
   }
 
-  async edit(entity: UserEntity): Promise<void | UserVO> {
-    const { userName, phoneNumber, email, id } = entity;
+  async editUser(userDTO: UserDTO): Promise<void | UserVO> {
+    const { userName, phoneNumber, email, id, nickName, sex, avatar } = userDTO;
     let user = await this.userModel.findOneBy({ userName });
 
     if (user && user.id !== id) {
@@ -82,9 +122,73 @@ export class UserService extends BaseService<UserEntity> {
       throw R.error('当前邮箱已存在');
     }
 
-    await this.userModel.save(entity);
+    await this.defaultDataSource.transaction(async manager => {
+      await manager
+        .createQueryBuilder()
+        .update(UserEntity)
+        .set({
+          nickName,
+          phoneNumber,
+          sex,
+        })
+        .where('id = :id', { id: userDTO.id })
+        .execute();
 
+      const fileRecord = await this.fileModel.findOneBy({
+        pkValue: id,
+        pkName: 'user_avatar',
+      });
+
+      if (fileRecord && !avatar) {
+        await this.fileModel.remove(fileRecord);
+      } else if (fileRecord && avatar && fileRecord.id !== avatar) {
+        await Promise.all([
+          manager.delete(FileEntity, fileRecord.id),
+          manager
+            .createQueryBuilder()
+            .update(FileEntity)
+            .set({
+              pkValue: id,
+              pkName: 'user_avatar',
+            })
+            .where('id = :id', { id: userDTO.avatar })
+            .execute(),
+        ]);
+      } else if (!fileRecord && avatar) {
+        manager
+          .createQueryBuilder()
+          .update(FileEntity)
+          .set({
+            pkValue: id,
+            pkName: 'user_avatar',
+          })
+          .where('id = :id', { id: userDTO.avatar })
+          .execute();
+      }
+    });
+
+    const entity = this.userModel.findOneBy({ id });
     return omit(entity, ['password']) as UserVO;
+  }
+
+  async removeUser(id: number) {
+    await this.defaultDataSource.transaction(async manager => {
+      await Promise.all([
+        manager
+          .createQueryBuilder()
+          .delete()
+          .from(UserEntity)
+          .where('id = :id', { id })
+          .execute(),
+        manager
+          .createQueryBuilder()
+          .delete()
+          .from(FileEntity)
+          .where('pkValue = :pkValue', { pkValue: id })
+          .andWhere('pkName = "user_avatar"')
+          .execute(),
+      ]);
+    });
   }
 
   async page<T>(page = 0, pageSize = 10, where?: FindOptionsWhere<T>) {
@@ -94,7 +198,7 @@ export class UserService extends BaseService<UserEntity> {
         't.avatarEntity',
         FileEntity,
         'file',
-        'file.id = t.avatar'
+        'file.pkValue = t.id and file.pkName = "user_avatar"'
       )
       .where(where)
       .skip(page)

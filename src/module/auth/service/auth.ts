@@ -57,6 +57,10 @@ export class AuthService {
       .expire(`token:${token}`, expire)
       .set(`refreshToken:${refreshToken}`, user.id)
       .expire(`refreshToken:${refreshToken}`, refreshExpire)
+      .set(`userToken:${user.id}`, token)
+      .expire(`userToken:${token}`, expire)
+      .set(`userRefreshToken:${user.id}`, refreshToken)
+      .expire(`userRefreshToken:${token}`, refreshExpire)
       .exec();
 
     return {
@@ -105,7 +109,7 @@ export class AuthService {
         't.avatarEntity',
         FileEntity,
         'file',
-        'file.id = t.avatar'
+        'file.pkValue = t.id and file.pkName = "user_avatar"'
       )
       .where('t.id = :id', { id: userId })
       .getOne();

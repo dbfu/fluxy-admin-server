@@ -24,6 +24,6 @@ export class LoginDTO {
   })
   @Rule(requiredString.error(R.validateError('验证码不能为空')))
   captcha: string;
-  @Rule(RuleType.string())
+  @Rule(requiredString.error(R.validateError('公钥不能为空')))
   publicKey: string;
 }

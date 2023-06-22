@@ -85,18 +85,21 @@ export class UserController {
   }
 
   @Post('/send/email/captcha')
-  async sendEmailCaptcha(@Body() email: { email: string }) {
+  async sendEmailCaptcha(@Body() emailInfo: { email: string }) {
+    if (!emailInfo.email) {
+      throw R.error('邮箱不能为空');
+    }
     const emailCaptcha = generateRandomCode();
 
     await this.redisService.set(
-      `emailCaptcha:${email.email}`,
+      `emailCaptcha:${emailInfo.email}`,
       emailCaptcha,
       'EX',
       60 * 30
     );
 
     this.mailService.sendMail({
-      to: email.email,
+      to: emailInfo.email,
       html: `<div>
         您本次的验证码是<span style="color:#5867dd;font-weight:800;font-size:24px;">${emailCaptcha}</span>，验证码有效期为30分钟。
       </div`,

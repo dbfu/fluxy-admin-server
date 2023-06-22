@@ -1,6 +1,6 @@
 import { Config, Inject, Provide } from '@midwayjs/decorator';
-import { InjectEntityModel } from '@midwayjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
 import { UserEntity } from '../../user/entity/user';
@@ -13,6 +13,8 @@ import { uuid } from '../../../utils/uuid';
 import { RefreshTokenDTO } from '../dto/refresh.token';
 import { Context } from '@midwayjs/core';
 import { FileEntity } from '../../file/entity/file';
+import { ResetPasswordDTO } from '../dto/reset.password';
+import { RSAService } from '../../../common/rsa.service';
 
 @Provide()
 export class AuthService {
@@ -24,6 +26,10 @@ export class AuthService {
   redisService: RedisService;
   @Inject()
   ctx: Context;
+  @Inject()
+  rsaService: RSAService;
+  @InjectDataSource()
+  defaultDataSource: DataSource;
 
   async login(loginDTO: LoginDTO): Promise<TokenVO> {
     const { accountNumber } = loginDTO;
@@ -57,10 +63,8 @@ export class AuthService {
       .expire(`token:${token}`, expire)
       .set(`refreshToken:${refreshToken}`, user.id)
       .expire(`refreshToken:${refreshToken}`, refreshExpire)
-      .set(`userToken:${user.id}`, token)
-      .expire(`userToken:${token}`, expire)
-      .set(`userRefreshToken:${user.id}`, refreshToken)
-      .expire(`userRefreshToken:${token}`, refreshExpire)
+      .sadd(`userToken_${user.id}`, token)
+      .sadd(`userRefreshToken_${user.id}`, refreshToken)
       .exec();
 
     return {
@@ -119,5 +123,49 @@ export class AuthService {
     }
 
     return entity.toVO();
+  }
+
+  async resetPassword(resetPasswordDTO: ResetPasswordDTO) {
+    const captcha = await this.redisService.get(
+      `resetPasswordEmailCaptcha:${resetPasswordDTO.email}`
+    );
+
+    if (captcha !== resetPasswordDTO.emailCaptcha) {
+      throw R.error('邮箱验证码错误或已失效');
+    }
+
+    const user = await this.userModel.findOneBy({
+      email: resetPasswordDTO.email,
+    });
+
+    if (!user) {
+      throw R.error('邮箱不存在');
+    }
+
+    const password = await this.rsaService.decrypt(
+      resetPasswordDTO.publicKey,
+      resetPasswordDTO.password
+    );
+
+    const tokens = await this.redisService.smembers(`userToken_${user.id}`);
+    const refreshTokens = await this.redisService.smembers(
+      `userRefreshToken_${user.id}`
+    );
+
+    await this.defaultDataSource.transaction(async manager => {
+      const hashPassword = bcrypt.hashSync(password, 10);
+      user.password = hashPassword;
+      await manager.save(UserEntity, user);
+
+      await Promise.all([
+        ...tokens.map(token => this.redisService.del(`token:${token}`)),
+        ...refreshTokens.map(refreshToken =>
+          this.redisService.del(`refreshToken:${refreshToken}`)
+        ),
+        this.redisService.del(
+          `resetPasswordEmailCaptcha:${resetPasswordDTO.email}`
+        ),
+      ]);
+    });
   }
 }

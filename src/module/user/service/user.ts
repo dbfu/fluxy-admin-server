@@ -173,6 +173,11 @@ export class UserService extends BaseService<UserEntity> {
 
   async removeUser(id: number) {
     await this.defaultDataSource.transaction(async manager => {
+      const tokens = await this.redisService.smembers(`userToken_${id}`);
+      const refreshTokens = await this.redisService.smembers(
+        `userRefreshToken_${id}`
+      );
+
       await Promise.all([
         manager
           .createQueryBuilder()
@@ -187,6 +192,10 @@ export class UserService extends BaseService<UserEntity> {
           .where('pkValue = :pkValue', { pkValue: id })
           .andWhere('pkName = "user_avatar"')
           .execute(),
+        ...tokens.map(token => this.redisService.del(`token:${token}`)),
+        ...refreshTokens.map(refreshToken =>
+          this.redisService.del(`refreshToken:${refreshToken}`)
+        ),
       ]);
     });
   }
@@ -210,5 +219,9 @@ export class UserService extends BaseService<UserEntity> {
       data: data.map(entity => entity.toVO()),
       total,
     };
+  }
+
+  async getByEmail(email: string) {
+    return await this.userModel.findOneBy({ email });
   }
 }

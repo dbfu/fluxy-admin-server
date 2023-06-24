@@ -4,7 +4,6 @@ export class Migration1687610837273 implements MigrationInterface {
   name = 'Migration1687610837273';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('ALTER TABLE `sys_user` DROP COLUMN `avatar`');
     await queryRunner.query(
       "ALTER TABLE `sys_user` CHANGE `id` `id` int NOT NULL COMMENT '主键'"
     );
@@ -48,6 +47,5 @@ export class Migration1687610837273 implements MigrationInterface {
     await queryRunner.query(
       "ALTER TABLE `sys_user` CHANGE `id` `id` int NOT NULL AUTO_INCREMENT COMMENT '主键'"
     );
-    await queryRunner.query('ALTER TABLE `sys_user` DROP COLUMN `avatar`');
   }
 }

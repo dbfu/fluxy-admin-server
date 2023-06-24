@@ -49,8 +49,8 @@ function connect() {
         }
       }
     );
+    connection.end();
   });
-  connection.end();
 }
 
 connect();

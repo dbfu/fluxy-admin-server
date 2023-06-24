@@ -24,6 +24,7 @@
     "cache-manager": "^5.2.1",
     "cache-manager-ioredis": "^2.1.0",
     "crypto-js": "^4.1.1",
+    "dotenv": "^16.3.1",
     "i": "^0.3.7",
     "jsencrypt": "^3.3.2",
     "lodash": "^4.17.21",

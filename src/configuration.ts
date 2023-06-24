@@ -17,6 +17,9 @@ import { ValidateErrorFilter } from './filter/validate.filter';
 import { CommonErrorFilter } from './filter/common.filter';
 import { UnauthorizedErrorFilter } from './filter/unauthorized.filter';
 import { DefaultErrorFilter } from './filter/default.filter';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 @Configuration({
   imports: [

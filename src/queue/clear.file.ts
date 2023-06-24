@@ -2,7 +2,7 @@ import { Processor, IProcessor } from '@midwayjs/bull';
 import { Inject } from '@midwayjs/core';
 import { FileService } from '../module/file/service/file';
 
-@Processor('test', {
+@Processor('clear_file', {
   repeat: {
     cron: '0 0 0 * * *',
   },

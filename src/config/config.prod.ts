@@ -6,6 +6,7 @@ import { TokenConfig } from '../interface/token.config';
 import { MailConfig, MinioConfig } from '../interface';
 
 import typeormConfig from './typeorm.prod';
+import { EverythingSubscriber } from '../typeorm-event-subscriber';
 
 export default {
   // use for cookie sign key, should change to your own and keep security
@@ -91,4 +92,5 @@ export default {
       pass: env.MAIL_PASS,
     },
   } as MailConfig,
+  subscribers: [EverythingSubscriber],
 } as MidwayConfig;

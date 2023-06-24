@@ -10,5 +10,5 @@ export class FileEntity extends BaseEntity {
   @Column({ comment: '外健名称', nullable: true })
   pkName: string;
   @Column({ comment: '外健值', nullable: true })
-  pkValue?: number;
+  pkValue?: string;
 }

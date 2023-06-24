@@ -15,6 +15,7 @@ import { Context } from '@midwayjs/core';
 import { FileEntity } from '../../file/entity/file';
 import { ResetPasswordDTO } from '../dto/reset.password';
 import { RSAService } from '../../../common/rsa.service';
+import { CaptchaService } from './captcha';
 
 @Provide()
 export class AuthService {
@@ -30,6 +31,8 @@ export class AuthService {
   rsaService: RSAService;
   @InjectDataSource()
   defaultDataSource: DataSource;
+  @Inject()
+  captchaService: CaptchaService;
 
   async login(loginDTO: LoginDTO): Promise<TokenVO> {
     const { accountNumber } = loginDTO;
@@ -66,6 +69,14 @@ export class AuthService {
       .sadd(`userToken_${user.id}`, token)
       .sadd(`userRefreshToken_${user.id}`, refreshToken)
       .exec();
+
+    const { captcha, captchaId } = loginDTO;
+
+    const result = await this.captchaService.check(captchaId, captcha);
+
+    if (!result) {
+      throw R.error('验证码错误');
+    }
 
     return {
       expire,
@@ -147,6 +158,7 @@ export class AuthService {
       resetPasswordDTO.password
     );
 
+    // 获取当前用户颁发的token和refreshToken，然后再下面给移除掉。
     const tokens = await this.redisService.smembers(`userToken_${user.id}`);
     const refreshTokens = await this.redisService.smembers(
       `userRefreshToken_${user.id}`

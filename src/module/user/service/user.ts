@@ -90,8 +90,8 @@ export class UserService extends BaseService<UserEntity> {
         to: email,
         subject: 'fluxy-admin平台账号创建成功',
         html: `<div>
-        <p>${userDTO.nickName}，你的账号已开通成功</p>
-        <p>登录地址：<a href="https://fluxyadmin.cn/#/user/login">https://fluxyadmin.cn/#/user/login</a></p>
+        <p><span style="color:#5867dd;">${userDTO.nickName}</span>，你的账号已开通成功</p>
+        <p>登录地址：<a href="https://fluxyadmin.cn/user/login">https://fluxyadmin.cn/user/login</a></p>
         <p>登录账号：${userDTO.email}</p>
         <p>登录密码：${password}</p>
         </div>`,
@@ -134,14 +134,19 @@ export class UserService extends BaseService<UserEntity> {
         .where('id = :id', { id: userDTO.id })
         .execute();
 
+      // 根据当前用户id在文件表里查询
       const fileRecord = await this.fileModel.findOneBy({
         pkValue: id,
         pkName: 'user_avatar',
       });
 
+      // 如果查到文件，并且当前头像是空的，只需要给原来的文件给删除就行了。
       if (fileRecord && !avatar) {
         await this.fileModel.remove(fileRecord);
       } else if (fileRecord && avatar && fileRecord.id !== avatar) {
+        // 如果查到文件，并且有当前头像，并且原来的文件id不等于当前传过来的文件id
+        // 删除原来的文件
+        // 把当前的用户id更新到新文件行数据中
         await Promise.all([
           manager.delete(FileEntity, fileRecord.id),
           manager
@@ -155,6 +160,7 @@ export class UserService extends BaseService<UserEntity> {
             .execute(),
         ]);
       } else if (!fileRecord && avatar) {
+        // 如果以前没有文件，现在有文件，直接更新就行了
         manager
           .createQueryBuilder()
           .update(FileEntity)

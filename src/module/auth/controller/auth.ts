@@ -46,14 +46,6 @@ export class AuthController {
   @ApiResponse({ type: TokenVO })
   @NotLogin()
   async login(@Body(ALL) loginDTO: LoginDTO) {
-    const { captcha, captchaId } = loginDTO;
-
-    const result = await this.captchaService.check(captchaId, captcha);
-
-    if (!result) {
-      throw R.error('验证码错误');
-    }
-
     const password = await this.rsaService.decrypt(
       loginDTO.publicKey,
       loginDTO.password

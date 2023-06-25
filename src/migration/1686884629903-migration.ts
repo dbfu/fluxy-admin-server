@@ -15,7 +15,7 @@ export class Migration1686884629903 implements MigrationInterface {
       "ALTER TABLE `sys_user` ADD `avatar` int NULL COMMENT '头像'"
     );
     await queryRunner.query(
-      "insert into `sys_user` (userName, nickName, password, phoneNumber, email) values ('admin', '管理员', '$2a$10$.OggYJaVe1OCLVSB/9wqk.bYYaSdvcHu7dcc0zpewfpzNKEDPh2Tu', '18222222222', 'admin@qq.com')"
+      "insert into `sys_user` (userName, nickName, password, phoneNumber, email, id) values ('admin', '管理员', '$2a$10$.OggYJaVe1OCLVSB/9wqk.bYYaSdvcHu7dcc0zpewfpzNKEDPh2Tu', '18222222222', 'admin@qq.com', '1')"
     );
   }
 

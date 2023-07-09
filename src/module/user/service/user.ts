@@ -90,18 +90,12 @@ export class UserService extends BaseService<UserEntity> {
           .execute();
       }
 
-      const userRolesMap = await this.userRoleModel.findBy({
-        userId: userDTO.id,
-      });
-
-      // 先删除当前用户所有角色
-      await manager.remove(UserRoleEntity, userRolesMap);
       await manager.save(
         UserRoleEntity,
         userDTO.roleIds.map(roleId => {
           const userRole = new UserRoleEntity();
           userRole.roleId = roleId;
-          userRole.userId = userDTO.id;
+          userRole.userId = entity.id;
           return userRole;
         })
       );

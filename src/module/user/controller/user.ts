@@ -6,7 +6,6 @@ import {
   Post,
   Provide,
   Query,
-  ALL,
   Put,
   Param,
   Del,
@@ -35,7 +34,7 @@ export class UserController {
   redisService: RedisService;
 
   @Post('/', { description: '新建' })
-  async create(@Body(ALL) data: UserDTO) {
+  async create(@Body() data: UserDTO) {
     if (!data.emailCaptcha) {
       throw R.error('邮箱验证码不能为空');
     }
@@ -43,7 +42,7 @@ export class UserController {
   }
 
   @Put('/', { description: '编辑' })
-  async edit(@Body(ALL) data: UserDTO) {
+  async edit(@Body() data: UserDTO) {
     return await this.userService.editUser(data);
   }
 

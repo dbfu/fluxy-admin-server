@@ -42,7 +42,7 @@ export abstract class BaseService<T extends BaseEntity> {
   }
 
   async list(where?: FindOptionsWhere<T>) {
-    const order: any = { create_time: 'desc' };
+    const order: any = { createDate: 'desc' };
     const data = await this.getModel().find({
       where,
       order,

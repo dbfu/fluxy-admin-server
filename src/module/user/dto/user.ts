@@ -1,7 +1,7 @@
 import { ApiProperty } from '@midwayjs/swagger';
 import { UserEntity } from '../entity/user';
 import { BaseDTO } from '../../../common/base.dto';
-import { Rule } from '@midwayjs/validate';
+import { Rule, RuleType } from '@midwayjs/validate';
 import { R } from '../../../common/base.error.util';
 import {
   email,
@@ -28,4 +28,6 @@ export class UserDTO extends BaseDTO<UserEntity> {
   sex?: number;
   @ApiProperty({ description: '邮箱验证码' })
   emailCaptcha: string;
+  @Rule(RuleType.array().items(RuleType.string()))
+  roleIds?: string[];
 }

@@ -1,11 +1,13 @@
 import { ApiProperty } from '@midwayjs/swagger';
 import { Rule, RuleType } from '@midwayjs/validate';
+import { omit } from 'lodash';
+import { BaseEntity } from './base.entity';
 
-export class BaseDTO<T> {
+export class BaseDTO<T extends BaseEntity> {
   @ApiProperty()
   @Rule(RuleType.allow(null))
   id: string;
   toEntity(): T {
-    return this as unknown as T;
+    return omit(this, ['createDate', 'updateDate']) as unknown as T;
   }
 }

@@ -1,7 +1,7 @@
 import '@midwayjs/core';
 
 interface UserContext {
-  userId: number;
+  userId: string;
   refreshToken: string;
 }
 

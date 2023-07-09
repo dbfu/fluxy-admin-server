@@ -7,7 +7,7 @@ export class BaseEntity {
   createDate?: Date;
   @UpdateDateColumn({ comment: '更新时间' })
   updateDate?: Date;
-  toVO(): any {
+  toVO?(): any {
     return this;
   }
 }

@@ -14,6 +14,8 @@ import { UserDTO } from '../dto/user';
 import { RedisService } from '@midwayjs/redis';
 import { MailService } from '../../../common/mail.service';
 import { uuid } from '../../../utils/uuid';
+import { UserRoleEntity } from '../entity/user.role';
+import { RoleEntity } from '../../role/entity/role';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
@@ -29,6 +31,8 @@ export class UserService extends BaseService<UserEntity> {
   redisService: RedisService;
   @Inject()
   mailService: MailService;
+  @InjectEntityModel(UserRoleEntity)
+  userRoleModel: Repository<UserRoleEntity>;
 
   getModel(): Repository<UserEntity> {
     return this.userModel;
@@ -86,6 +90,22 @@ export class UserService extends BaseService<UserEntity> {
           .execute();
       }
 
+      const userRolesMap = await this.userRoleModel.findBy({
+        userId: userDTO.id,
+      });
+
+      // 先删除当前用户所有角色
+      await manager.remove(UserRoleEntity, userRolesMap);
+      await manager.save(
+        UserRoleEntity,
+        userDTO.roleIds.map(roleId => {
+          const userRole = new UserRoleEntity();
+          userRole.roleId = roleId;
+          userRole.userId = userDTO.id;
+          return userRole;
+        })
+      );
+
       this.mailService.sendMail({
         to: email,
         subject: 'fluxy-admin平台账号创建成功',
@@ -122,6 +142,10 @@ export class UserService extends BaseService<UserEntity> {
       throw R.error('当前邮箱已存在');
     }
 
+    const userRolesMap = await this.userRoleModel.findBy({
+      userId: userDTO.id,
+    });
+
     await this.defaultDataSource.transaction(async manager => {
       await manager
         .createQueryBuilder()
@@ -133,7 +157,17 @@ export class UserService extends BaseService<UserEntity> {
         })
         .where('id = :id', { id: userDTO.id })
         .execute();
-
+      // 先删除当前用户所有角色
+      await manager.remove(UserRoleEntity, userRolesMap);
+      await manager.save(
+        UserRoleEntity,
+        userDTO.roleIds.map(roleId => {
+          const userRole = new UserRoleEntity();
+          userRole.roleId = roleId;
+          userRole.userId = userDTO.id;
+          return userRole;
+        })
+      );
       // 根据当前用户id在文件表里查询
       const fileRecord = await this.fileModel.findOneBy({
         pkValue: id,
@@ -209,6 +243,13 @@ export class UserService extends BaseService<UserEntity> {
   async page<T>(page = 0, pageSize = 10, where?: FindOptionsWhere<T>) {
     const [data, total] = await this.userModel
       .createQueryBuilder('t')
+      .leftJoinAndSelect(UserRoleEntity, 'user_role', 't.id = user_role.userId')
+      .leftJoinAndMapMany(
+        't.roles',
+        RoleEntity,
+        'role',
+        'role.id = user_role.roleId'
+      )
       .leftJoinAndMapOne(
         't.avatarEntity',
         FileEntity,

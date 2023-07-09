@@ -1,6 +1,6 @@
 import { Config, Inject, Provide } from '@midwayjs/decorator';
 import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
 import { UserEntity } from '../../user/entity/user';
@@ -16,6 +16,10 @@ import { FileEntity } from '../../file/entity/file';
 import { ResetPasswordDTO } from '../dto/reset.password';
 import { RSAService } from '../../../common/rsa.service';
 import { CaptchaService } from './captcha';
+import { UserRoleEntity } from '../../user/entity/user.role';
+import { RoleEntity } from '../../role/entity/role';
+import { RoleMenuEntity } from '../../role/entity/role.menu';
+import { MenuEntity } from '../../menu/entity/menu';
 
 @Provide()
 export class AuthService {
@@ -33,6 +37,12 @@ export class AuthService {
   defaultDataSource: DataSource;
   @Inject()
   captchaService: CaptchaService;
+  @InjectEntityModel(UserRoleEntity)
+  userRoleModel: Repository<UserRoleEntity>;
+  @InjectEntityModel(RoleMenuEntity)
+  roleMenuModel: Repository<RoleMenuEntity>;
+  @InjectEntityModel(MenuEntity)
+  menuModel: Repository<MenuEntity>;
 
   async login(loginDTO: LoginDTO): Promise<TokenVO> {
     const { accountNumber } = loginDTO;
@@ -117,14 +127,21 @@ export class AuthService {
     } as TokenVO;
   }
 
-  async getUserById(userId: number) {
+  async getUserById(userId: string) {
     const entity = await this.userModel
       .createQueryBuilder('t')
+      .leftJoinAndSelect(UserRoleEntity, 'user_role', 't.id = user_role.userId')
       .leftJoinAndMapOne(
         't.avatarEntity',
         FileEntity,
         'file',
         'file.pkValue = t.id and file.pkName = "user_avatar"'
+      )
+      .leftJoinAndMapMany(
+        't.roles',
+        RoleEntity,
+        'role',
+        'role.id = user_role.roleId'
       )
       .where('t.id = :id', { id: userId })
       .getOne();
@@ -133,7 +150,23 @@ export class AuthService {
       throw R.error('当前用户不存在！');
     }
 
-    return entity.toVO();
+    // 先把用户分配的角色查出来
+    const userRoles = await this.userRoleModel.findBy({ userId: userId });
+    // 根据已分配角色查询已分配的菜单id数组
+    const roleMenus = await this.roleMenuModel.find({
+      where: { roleId: In(userRoles.map(userRole => userRole.roleId)) },
+    });
+    // 根据菜单id数组查询菜单信息，这里加了个特殊判断，如果是管理员直接返回全部菜单，正常这个应该走数据迁移，数据迁移还没做，就先用这种方案。
+    const query = { id: In(roleMenus.map(roleMenu => roleMenu.menuId)) };
+    const menus = await this.menuModel.find({
+      where: userId === '1' ? {} : query,
+      order: { orderNumber: 'ASC', createDate: 'DESC' },
+    });
+
+    return {
+      ...entity.toVO(),
+      menus,
+    };
   }
 
   async resetPassword(resetPasswordDTO: ResetPasswordDTO) {

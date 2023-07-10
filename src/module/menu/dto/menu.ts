@@ -6,6 +6,7 @@ import {
   requiredString,
   string,
   requiredNumber,
+  number,
 } from '../../../common/common.validate.rules';
 import { BaseDTO } from '../../../common/base.dto';
 
@@ -18,14 +19,16 @@ export class MenuDTO extends BaseDTO<MenuEntity> {
   icon?: string;
   @Rule(requiredNumber.error(R.validateError('类型不能为空')))
   type?: number;
-  @Rule(requiredString.error(R.validateError('路由不能为空')))
+  @Rule(string.allow(null))
   route?: string;
   @Rule(string.allow(null))
   filePath?: string;
-  @Rule(requiredNumber.error(R.validateError('排序号不能为空')))
+  @Rule(number.allow(null))
   orderNumber?: number;
   @Rule(string.allow(null))
   url?: string;
   @Rule(bool.allow(null))
   show?: boolean;
+  @Rule(string.allow(null))
+  authCode?: string;
 }

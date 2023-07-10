@@ -22,8 +22,18 @@ export class MenuService extends BaseService<MenuEntity> {
   }
 
   async createMenu(data: MenuDTO) {
-    if ((await this.menuModel.countBy({ route: data.route })) > 0) {
+    if (
+      data.route &&
+      (await this.menuModel.countBy({ route: data.route })) > 0
+    ) {
       throw R.error('路由不能重复');
+    }
+
+    if (
+      data.authCode &&
+      (await this.menuModel.countBy({ authCode: data.authCode })) > 0
+    ) {
+      throw R.error('权限代码不能重复');
     }
 
     return await this.create(data.toEntity());

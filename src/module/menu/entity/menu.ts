@@ -11,14 +11,16 @@ export class MenuEntity extends BaseEntity {
   icon?: string;
   @Column({ comment: '类型，1:目录 2:菜单' })
   type?: number;
-  @Column({ comment: '路由' })
+  @Column({ comment: '路由', nullable: true })
   route?: string;
   @Column({ comment: '本地组件地址', nullable: true })
   filePath?: string;
-  @Column({ comment: '排序号' })
+  @Column({ comment: '排序号', nullable: true })
   orderNumber?: number;
   @Column({ comment: 'url', nullable: true })
   url?: string;
   @Column({ comment: '是否在菜单中显示' })
   show?: boolean;
+  @Column({ comment: '按钮权限代码' })
+  authCode?: string;
 }

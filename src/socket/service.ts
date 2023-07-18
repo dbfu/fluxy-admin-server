@@ -45,7 +45,7 @@ export class SocketService {
   sendMessage<T>(userId: string, data: SocketMessage<T>) {
     const clients = this.connects.get(userId);
 
-    console.log('send message', userId, data.type, clients.length);
+    console.log('send message', userId, data.type, clients?.length);
 
     console.log('connects', [...this.connects.keys()]);
 

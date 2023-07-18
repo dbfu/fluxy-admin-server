@@ -18,6 +18,7 @@ import { CommonErrorFilter } from './filter/common.filter';
 import { UnauthorizedErrorFilter } from './filter/unauthorized.filter';
 import { DefaultErrorFilter } from './filter/default.filter';
 import * as dotenv from 'dotenv';
+import * as ws from '@midwayjs/ws';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ dotenv.config();
     cache,
     upload,
     bull,
+    ws,
     {
       component: swagger,
       enabledEnvironment: ['local'],

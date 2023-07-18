@@ -1,4 +1,4 @@
-import { Provide } from '@midwayjs/decorator';
+import { Inject, Provide } from '@midwayjs/decorator';
 import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { BaseService } from '../../../common/base.service';
@@ -12,6 +12,9 @@ import {
 } from '../../../utils/typeorm.utils';
 import { RoleDTO } from '../dto/role';
 import { R } from '../../../common/base.error.util';
+import { SocketService } from '../../../socket/service';
+import { UserRoleEntity } from '../../user/entity/user.role';
+import { SocketMessageType } from '../../../socket/message';
 
 @Provide()
 export class RoleService extends BaseService<RoleEntity> {
@@ -21,8 +24,12 @@ export class RoleService extends BaseService<RoleEntity> {
   roleMenuModel: Repository<RoleMenuEntity>;
   @InjectEntityModel(MenuInterfaceEntity)
   menuInterfaceModel: Repository<MenuInterfaceEntity>;
+  @InjectEntityModel(UserRoleEntity)
+  userRoleModel: Repository<UserRoleEntity>;
   @InjectDataSource()
   defaultDataSource: DataSource;
+  @Inject()
+  socketService: SocketService;
 
   getModel(): Repository<RoleEntity> {
     return this.roleModel;
@@ -58,27 +65,56 @@ export class RoleService extends BaseService<RoleEntity> {
       const entity = data.toEntity();
       await manager.save(RoleEntity, entity);
       if (Array.isArray(data.menuIds)) {
-        await manager
-          .createQueryBuilder()
-          .delete()
-          .from(RoleMenuEntity)
-          .where('roleId = :roleId', { roleId: data.id })
-          .execute();
+        const roleMenus = await this.roleMenuModel.findBy({ roleId: data.id });
 
-        const roleMenus = data.menuIds.map(menuId => {
-          const roleMenu = new RoleMenuEntity();
-          roleMenu.menuId = menuId;
-          roleMenu.roleId = entity.id;
-          return roleMenu;
-        });
-        if (roleMenus.length) {
+        await manager.delete(RoleMenuEntity, roleMenus);
+
+        if (data.menuIds.length) {
           // 批量插入
           await manager
             .createQueryBuilder()
             .insert()
             .into(RoleMenuEntity)
-            .values(roleMenus)
+            .values(
+              data.menuIds.map(menuId => {
+                const roleMenu = new RoleMenuEntity();
+                roleMenu.menuId = menuId;
+                roleMenu.roleId = entity.id;
+                return roleMenu;
+              })
+            )
             .execute();
+
+          const oldMenuIds = roleMenus.map(menu => menu.menuId);
+          if (oldMenuIds.length !== data.menuIds.length) {
+            // 如果有变化，查询所有分配了该角色的用户，给对应所有用户发通知
+            const userIds = (
+              await this.userRoleModel.findBy({ roleId: data.id })
+            ).map(userRole => userRole.userId);
+
+            userIds.forEach(userId => {
+              this.socketService.sendMessage(userId, {
+                type: SocketMessageType.PermissionChange,
+              });
+            });
+          }
+
+          // 因为数组都是数字，所以先排序，排序之后把数组转换为字符串比较，写法比较简单
+          const sortOldMenuIds = oldMenuIds.sort();
+          const sortMenusIds = data.menuIds.sort();
+
+          if (sortOldMenuIds.join() !== sortMenusIds.join()) {
+            // 如果有变化，查询所有分配了该角色的用户，给对应所有用户发通知
+            const userIds = (
+              await this.userRoleModel.findBy({ roleId: data.id })
+            ).map(userRole => userRole.userId);
+
+            userIds.forEach(userId => {
+              this.socketService.sendMessage(userId, {
+                type: SocketMessageType.PermissionChange,
+              });
+            });
+          }
         }
       }
     });
@@ -144,6 +180,37 @@ export class RoleService extends BaseService<RoleEntity> {
     await this.defaultDataSource.transaction(async transaction => {
       await Promise.all([transaction.remove(RoleMenuEntity, curRoleMenus)]);
       await Promise.all([transaction.save(RoleMenuEntity, roleMenus)]);
+
+      const oldMenuIds = curRoleMenus.map(menu => menu.menuId);
+      if (oldMenuIds.length !== menuIds.length) {
+        // 如果有变化，查询所有分配了该角色的用户，给对应所有用户发通知
+        const userIds = (await this.userRoleModel.findBy({ roleId })).map(
+          userRole => userRole.userId
+        );
+
+        userIds.forEach(userId => {
+          this.socketService.sendMessage(userId, {
+            type: SocketMessageType.PermissionChange,
+          });
+        });
+      }
+
+      // 因为数组都是数字，所以先排序，排序之后把数组转换为字符串比较，写法比较简单
+      const sortOldMenuIds = oldMenuIds.sort();
+      const sortMenusIds = menuIds.sort();
+
+      if (sortOldMenuIds.join() !== sortMenusIds.join()) {
+        // 如果有变化，查询所有分配了该角色的用户，给对应所有用户发通知
+        const userIds = (await this.userRoleModel.findBy({ roleId })).map(
+          userRole => userRole.userId
+        );
+
+        userIds.forEach(userId => {
+          this.socketService.sendMessage(userId, {
+            type: SocketMessageType.PermissionChange,
+          });
+        });
+      }
     });
   }
 }

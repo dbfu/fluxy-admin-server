@@ -20,6 +20,8 @@ import { UserRoleEntity } from '../../user/entity/user.role';
 import { RoleEntity } from '../../role/entity/role';
 import { RoleMenuEntity } from '../../role/entity/role.menu';
 import { MenuEntity } from '../../menu/entity/menu';
+import { SocketService } from '../../../socket/service';
+import { SocketMessageType } from '../../../socket/message';
 
 @Provide()
 export class AuthService {
@@ -43,6 +45,8 @@ export class AuthService {
   roleMenuModel: Repository<RoleMenuEntity>;
   @InjectEntityModel(MenuEntity)
   menuModel: Repository<MenuEntity>;
+  @Inject()
+  socketService: SocketService;
 
   async login(loginDTO: LoginDTO): Promise<TokenVO> {
     const { accountNumber } = loginDTO;
@@ -211,6 +215,10 @@ export class AuthService {
           `resetPasswordEmailCaptcha:${resetPasswordDTO.email}`
         ),
       ]);
+
+      this.socketService.sendMessage(user.id, {
+        type: SocketMessageType.PasswordChange,
+      });
     });
   }
 }

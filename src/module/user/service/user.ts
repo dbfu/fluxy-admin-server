@@ -16,6 +16,8 @@ import { MailService } from '../../../common/mail.service';
 import { uuid } from '../../../utils/uuid';
 import { UserRoleEntity } from '../entity/user.role';
 import { RoleEntity } from '../../role/entity/role';
+import { SocketService } from '../../../socket/service';
+import { SocketMessageType } from '../../../socket/message';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
@@ -33,6 +35,8 @@ export class UserService extends BaseService<UserEntity> {
   mailService: MailService;
   @InjectEntityModel(UserRoleEntity)
   userRoleModel: Repository<UserRoleEntity>;
+  @Inject()
+  socketService: SocketService;
 
   getModel(): Repository<UserEntity> {
     return this.userModel;
@@ -198,6 +202,25 @@ export class UserService extends BaseService<UserEntity> {
           })
           .where('id = :id', { id: userDTO.avatar })
           .execute();
+      }
+
+      // 检测当前用户分配的角色有没有变化，如果有变化，发通知给前端
+      const oldRoleIds = userRolesMap.map(role => role.roleId);
+      // 先判断两个数量是不是一样的
+      if (oldRoleIds.length !== userDTO.roleIds.length) {
+        this.socketService.sendMessage(userDTO.id, {
+          type: SocketMessageType.PermissionChange,
+        });
+      }
+
+      // 因为数组都是数字，所以先排序，排序之后把数组转换为字符串比较，写法比较简单
+      const sortOldRoleIds = oldRoleIds.sort();
+      const sortRoleIds = userDTO.roleIds.sort();
+
+      if (sortOldRoleIds.join() !== sortRoleIds.join()) {
+        this.socketService.sendMessage(userDTO.id, {
+          type: SocketMessageType.PermissionChange,
+        });
       }
     });
 

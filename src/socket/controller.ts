@@ -22,6 +22,8 @@ export class SocketConnectController {
 
   @OnWSConnection()
   async onConnectionMethod(socket: Context, request: http.IncomingMessage) {
+    console.log('websocket有新的连接');
+
     // 获取url上token参数
     const token = new URLSearchParams(request.url.slice(1)).get('token');
 
@@ -29,6 +31,8 @@ export class SocketConnectController {
       socket.close();
       return;
     }
+
+    console.log('token', token);
 
     const userInfoStr = await this.redisService.get(`token:${token}`);
     if (!userInfoStr) {

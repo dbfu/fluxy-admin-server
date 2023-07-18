@@ -211,6 +211,7 @@ export class UserService extends BaseService<UserEntity> {
         this.socketService.sendMessage(userDTO.id, {
           type: SocketMessageType.PermissionChange,
         });
+        return;
       }
 
       // 因为数组都是数字，所以先排序，排序之后把数组转换为字符串比较，写法比较简单

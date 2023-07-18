@@ -47,6 +47,8 @@ export class SocketService {
 
     console.log('send message', userId, data.type, clients.length);
 
+    console.log('connects', [...this.connects.keys()]);
+
     if (clients?.length) {
       clients.forEach(client => {
         client.send(JSON.stringify(data));

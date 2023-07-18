@@ -22,11 +22,10 @@ export class SocketConnectController {
 
   @OnWSConnection()
   async onConnectionMethod(socket: Context, request: http.IncomingMessage) {
-    console.log('websocket有新的连接');
-    console.log('request.url', request.url);
-
     // 获取url上token参数
-    const token = new URLSearchParams(request.url.slice(1)).get('token');
+    const token = new URLSearchParams(request.url.split('?').pop()).get(
+      'token'
+    );
 
     if (!token) {
       socket.close();

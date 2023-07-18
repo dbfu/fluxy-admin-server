@@ -43,7 +43,8 @@ export class SocketService {
    * @param data 数据
    */
   sendMessage<T>(userId: string, data: SocketMessage<T>) {
-    const clients = this.connects.get(userId);
+    const clients = this.connects.get(userId.toString());
+    console.log('this.connects', this.connects);
 
     console.log('send message', userId, data.type, clients?.length);
 

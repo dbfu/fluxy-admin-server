@@ -32,8 +32,6 @@ export class SocketConnectController {
       return;
     }
 
-    console.log('token', token);
-
     const userInfoStr = await this.redisService.get(`token:${token}`);
     if (!userInfoStr) {
       socket.send(

@@ -92,6 +92,8 @@ export class RoleService extends BaseService<RoleEntity> {
               await this.userRoleModel.findBy({ roleId: data.id })
             ).map(userRole => userRole.userId);
 
+            console.log(userIds, userIds);
+
             userIds.forEach(userId => {
               this.socketService.sendMessage(userId, {
                 type: SocketMessageType.PermissionChange,

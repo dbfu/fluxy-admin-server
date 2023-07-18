@@ -45,6 +45,7 @@ export class SocketConnectController {
 
     const userInfo = JSON.parse(userInfoStr);
     this.socketService.addConnect(userInfo.userId, socket);
+    console.log(this.socketService.connects, 'connects');
   }
 
   @OnWSMessage('message')

@@ -16,8 +16,10 @@ export class SocketService {
 
   @Init()
   async init() {
+    // 系统启动的时候，这个方法会自动执行，监听频道。
     await this.subscribeRedisService.subscribe(socketChannel);
 
+    // 如果接受到消息，通过userId获取连接，如果存在，通过连接给前端发消息
     this.subscribeRedisService.on(
       'message',
       (channel: string, message: string) => {

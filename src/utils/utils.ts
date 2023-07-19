@@ -5,7 +5,10 @@ import * as useragent from 'useragent';
 export const getIp = (ctx: Context) => {
   const ip =
     (ctx.req.headers['x-forwarded-for'] as string) ||
+    (ctx.req.headers['X-Real-IP'] as string) ||
     (ctx.req.socket.remoteAddress.replace('::ffff:', '') as string);
+
+  console.log(ip, 'ip');
   return ip;
 };
 

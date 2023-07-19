@@ -12,6 +12,13 @@ declare module '@midwayjs/core' {
   }
 }
 
+declare module 'koa' {
+  interface Context {
+    userInfo: UserContext;
+    token: string;
+  }
+}
+
 export interface MinioConfig {
   endPoint: string;
   port: number;

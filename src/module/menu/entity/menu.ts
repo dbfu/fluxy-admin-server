@@ -21,6 +21,6 @@ export class MenuEntity extends BaseEntity {
   url?: string;
   @Column({ comment: '是否在菜单中显示' })
   show?: boolean;
-  @Column({ comment: '按钮权限代码' })
+  @Column({ comment: '按钮权限代码', nullable: true })
   authCode?: string;
 }

@@ -38,11 +38,25 @@ export default {
     },
   },
   redis: {
-    client: {
-      port: 6379, // Redis port
-      host: env.REDIS_HOST || 'localhost', // Redis host
-      password: env.REDIS_PASSWORD || '',
-      db: 0,
+    clients: {
+      default: {
+        port: 6379, // Redis port
+        host: env.REDIS_HOST || 'localhost', // Redis host
+        password: env.REDIS_PASSWORD || '',
+        db: 0,
+      },
+      publish: {
+        port: 6379, // Redis port
+        host: env.REDIS_HOST || 'localhost', // Redis host
+        password: env.REDIS_PASSWORD || '',
+        db: 1,
+      },
+      subscribe: {
+        port: 6379, // Redis port
+        host: env.REDIS_HOST || 'localhost', // Redis host
+        password: env.REDIS_PASSWORD || '',
+        db: 2,
+      },
     },
   },
   i18n: {

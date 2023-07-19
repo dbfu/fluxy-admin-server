@@ -67,6 +67,6 @@ export class SocketConnectController {
   @OnWSDisConnection()
   async disconnect() {
     // 客户端断开连接后，从全局connects移除
-    // this.socketService.deleteConnect(this.ctx);
+    this.socketService.deleteConnect(this.ctx);
   }
 }

@@ -11,7 +11,7 @@ import { TokenConfig } from '../../../interface/token.config';
 import { RedisService } from '@midwayjs/redis';
 import { uuid } from '../../../utils/uuid';
 import { RefreshTokenDTO } from '../dto/refresh.token';
-import { Context } from '@midwayjs/core';
+import { Context } from 'koa';
 import { FileEntity } from '../../file/entity/file';
 import { ResetPasswordDTO } from '../dto/reset.password';
 import { RSAService } from '../../../common/rsa.service';
@@ -22,6 +22,8 @@ import { RoleMenuEntity } from '../../role/entity/role.menu';
 import { MenuEntity } from '../../menu/entity/menu';
 import { SocketService } from '../../../socket/service';
 import { SocketMessageType } from '../../../socket/message';
+import { LoginLogEntity } from '../../login.log/entity/login.log';
+import { getAddressByIp, getIp, getUserAgent } from '../../../utils/utils';
 
 @Provide()
 export class AuthService {
@@ -43,61 +45,85 @@ export class AuthService {
   userRoleModel: Repository<UserRoleEntity>;
   @InjectEntityModel(RoleMenuEntity)
   roleMenuModel: Repository<RoleMenuEntity>;
+  @InjectEntityModel(LoginLogEntity)
+  loginLogModel: Repository<LoginLogEntity>;
   @InjectEntityModel(MenuEntity)
   menuModel: Repository<MenuEntity>;
   @Inject()
   socketService: SocketService;
 
   async login(loginDTO: LoginDTO): Promise<TokenVO> {
-    const { accountNumber } = loginDTO;
-    const user = await this.userModel
-      .createQueryBuilder('user')
-      .where('user.phoneNumber = :accountNumber', {
-        accountNumber,
-      })
-      .orWhere('user.username = :accountNumber', { accountNumber })
-      .orWhere('user.email = :accountNumber', { accountNumber })
-      .select(['user.password', 'user.id'])
-      .getOne();
+    const ip = getIp(this.ctx);
+    const loginLog = new LoginLogEntity();
+    loginLog.ip = ip;
+    loginLog.address = getAddressByIp(loginLog.ip);
+    loginLog.browser = getUserAgent(this.ctx).family;
+    loginLog.os = getUserAgent(this.ctx).os.toString();
+    loginLog.userName = loginDTO.accountNumber;
 
-    if (!user) {
-      throw R.error('账号或密码错误！');
+    try {
+      const { accountNumber } = loginDTO;
+      const user = await this.userModel
+        .createQueryBuilder('user')
+        .where('user.phoneNumber = :accountNumber', {
+          accountNumber,
+        })
+        .orWhere('user.username = :accountNumber', { accountNumber })
+        .orWhere('user.email = :accountNumber', { accountNumber })
+        .select(['user.password', 'user.id', 'user.userName'])
+        .getOne();
+
+      if (!user) {
+        throw R.error('账号或密码错误！');
+      }
+
+      if (!bcrypt.compareSync(loginDTO.password, user.password)) {
+        throw R.error('用户名或密码错误！');
+      }
+
+      const { expire, refreshExpire } = this.tokenConfig;
+
+      const token = uuid();
+      const refreshToken = uuid();
+
+      // multi可以实现redis指令并发执行
+      await this.redisService
+        .multi()
+        .set(
+          `token:${token}`,
+          JSON.stringify({ userId: user.id, refreshToken })
+        )
+        .expire(`token:${token}`, expire)
+        .set(`refreshToken:${refreshToken}`, user.id)
+        .expire(`refreshToken:${refreshToken}`, refreshExpire)
+        .sadd(`userToken_${user.id}`, token)
+        .sadd(`userRefreshToken_${user.id}`, refreshToken)
+        .exec();
+
+      const { captcha, captchaId } = loginDTO;
+
+      const result = await this.captchaService.check(captchaId, captcha);
+
+      if (!result) {
+        throw R.error('验证码错误');
+      }
+
+      loginLog.status = true;
+      loginLog.message = '成功';
+
+      return {
+        expire,
+        token,
+        refreshExpire,
+        refreshToken,
+      } as TokenVO;
+    } catch (error) {
+      loginLog.status = false;
+      loginLog.message = error?.message || '登录失败';
+      throw error;
+    } finally {
+      this.loginLogModel.save(loginLog);
     }
-
-    if (!bcrypt.compareSync(loginDTO.password, user.password)) {
-      throw R.error('用户名或密码错误！');
-    }
-
-    const { expire, refreshExpire } = this.tokenConfig;
-
-    const token = uuid();
-    const refreshToken = uuid();
-
-    // multi可以实现redis指令并发执行
-    await this.redisService
-      .multi()
-      .set(`token:${token}`, JSON.stringify({ userId: user.id, refreshToken }))
-      .expire(`token:${token}`, expire)
-      .set(`refreshToken:${refreshToken}`, user.id)
-      .expire(`refreshToken:${refreshToken}`, refreshExpire)
-      .sadd(`userToken_${user.id}`, token)
-      .sadd(`userRefreshToken_${user.id}`, refreshToken)
-      .exec();
-
-    const { captcha, captchaId } = loginDTO;
-
-    const result = await this.captchaService.check(captchaId, captcha);
-
-    if (!result) {
-      throw R.error('验证码错误');
-    }
-
-    return {
-      expire,
-      token,
-      refreshExpire,
-      refreshToken,
-    } as TokenVO;
   }
 
   async refreshToken(refreshToken: RefreshTokenDTO): Promise<TokenVO> {

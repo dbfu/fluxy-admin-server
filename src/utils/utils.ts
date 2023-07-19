@@ -3,18 +3,23 @@ import { Context } from 'koa';
 import * as useragent from 'useragent';
 
 export const getIp = (ctx: Context) => {
-  const ip =
+  const ips =
     (ctx.req.headers['x-forwarded-for'] as string) ||
     (ctx.req.headers['X-Real-IP'] as string) ||
     (ctx.req.socket.remoteAddress.replace('::ffff:', '') as string);
 
-  console.log(ip, 'ip');
-  return ip;
+  if (Array.isArray(ips)) {
+    return ips?.[0];
+  }
+
+  return ips;
 };
 
 export const getAddressByIp = (ip: string): string => {
+  if (!ip) return '';
+
   const query = new IP2Region();
-  const res = query.search(ip || '120.24.78.68');
+  const res = query.search(ip);
   return [res.province, res.city].join(' ');
 };
 

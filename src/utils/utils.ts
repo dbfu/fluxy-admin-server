@@ -8,13 +8,7 @@ export const getIp = (ctx: Context) => {
     (ctx.req.headers['X-Real-IP'] as string) ||
     (ctx.req.socket.remoteAddress.replace('::ffff:', '') as string);
 
-  console.log(ips, 'ips');
-
-  if (Array.isArray(ips)) {
-    return ips?.[0];
-  }
-
-  return ips;
+  return ips.split(',')?.[0];
 };
 
 export const getAddressByIp = (ip: string): string => {

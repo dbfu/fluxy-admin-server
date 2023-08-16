@@ -146,7 +146,7 @@ export default (appInfo: MidwayAppInfo) => {
       },
     } as MailConfig,
     casbin: {
-      modelPath: join(appInfo.appDir, 'src/basic_model.conf'),
+      modelPath: join(appInfo.baseDir, 'basic_model.conf'),
       policyAdapter: createAdapter({
         dataSourceName: 'default',
       }),

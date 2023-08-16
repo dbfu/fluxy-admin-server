@@ -15,7 +15,7 @@ export default {
         logging: false,
         entities: ['**/entity/*{.ts,.js}', CasbinRule],
         timezone: '+00:00',
-        migrations: ['**/migration/*.ts', CasbinRule],
+        migrations: ['**/migration/*.ts'],
         cli: {
           migrationsDir: 'migration',
         },

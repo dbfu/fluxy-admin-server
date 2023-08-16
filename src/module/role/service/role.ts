@@ -1,8 +1,8 @@
 import { Inject, Provide } from '@midwayjs/decorator';
 import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { BaseService } from '../../../common/base.service';
-import { MenuInterfaceEntity } from '../../menu/entity/menu.interface';
+import { MenuApiEntity } from '../../menu/entity/menu.api';
 import { RolePageDTO } from '../dto/role.page';
 import { RoleEntity } from '../entity/role';
 import { RoleMenuEntity } from '../entity/role.menu';
@@ -15,6 +15,9 @@ import { R } from '../../../common/base.error.util';
 import { SocketService } from '../../../socket/service';
 import { UserRoleEntity } from '../../user/entity/user.role';
 import { SocketMessageType } from '../../../socket/message';
+import { CasbinEnforcerService } from '@midwayjs/casbin';
+import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
+import { NodeRedisWatcher } from '@midwayjs/casbin-redis-adapter';
 
 @Provide()
 export class RoleService extends BaseService<RoleEntity> {
@@ -22,14 +25,18 @@ export class RoleService extends BaseService<RoleEntity> {
   roleModel: Repository<RoleEntity>;
   @InjectEntityModel(RoleMenuEntity)
   roleMenuModel: Repository<RoleMenuEntity>;
-  @InjectEntityModel(MenuInterfaceEntity)
-  menuInterfaceModel: Repository<MenuInterfaceEntity>;
+  @InjectEntityModel(MenuApiEntity)
+  menuApiModel: Repository<MenuApiEntity>;
   @InjectEntityModel(UserRoleEntity)
   userRoleModel: Repository<UserRoleEntity>;
   @InjectDataSource()
   defaultDataSource: DataSource;
   @Inject()
   socketService: SocketService;
+  @Inject()
+  casbinEnforcerService: CasbinEnforcerService;
+  @Inject()
+  casbinWatcher: NodeRedisWatcher;
 
   getModel(): Repository<RoleEntity> {
     return this.roleModel;
@@ -48,6 +55,7 @@ export class RoleService extends BaseService<RoleEntity> {
         roleMenu.roleId = entity.id;
         return roleMenu;
       });
+
       if (roleMenus.length) {
         // 批量插入
         await manager
@@ -57,6 +65,40 @@ export class RoleService extends BaseService<RoleEntity> {
           .values(roleMenus)
           .execute();
       }
+
+      const apis = await this.menuApiModel.findBy({ menuId: In(data.menuIds) });
+
+      const casbinRules = apis.map(api => {
+        const casbinRule = new CasbinRule();
+        casbinRule.ptype = 'p';
+        casbinRule.v0 = entity.id;
+        casbinRule.v1 = api.path;
+        casbinRule.v2 = api.method;
+        casbinRule.v2 = api.menuId;
+        return casbinRule;
+      });
+
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(CasbinRule)
+        .values(casbinRules)
+        .execute();
+
+      this.casbinWatcher.publishData();
+
+      await Promise.all(
+        apis.map(api => {
+          return this.casbinEnforcerService.addPermissionForUser(
+            entity.id,
+            api.path,
+            api.method,
+            api.menuId
+          );
+        })
+      );
+
+      await this.casbinEnforcerService.savePolicy();
     });
   }
 
@@ -92,8 +134,6 @@ export class RoleService extends BaseService<RoleEntity> {
               await this.userRoleModel.findBy({ roleId: data.id })
             ).map(userRole => userRole.userId);
 
-            console.log(userIds, userIds);
-
             userIds.forEach(userId => {
               this.socketService.sendMessage(userId, {
                 type: SocketMessageType.PermissionChange,
@@ -117,6 +157,38 @@ export class RoleService extends BaseService<RoleEntity> {
               });
             });
           }
+
+          await this.casbinEnforcerService.deletePermissionsForUser(data.id);
+
+          await manager
+            .createQueryBuilder()
+            .delete()
+            .from(CasbinRule)
+            .where({ ptype: 'p', v0: data.id })
+            .execute();
+
+          const apis = await this.menuApiModel.findBy({
+            menuId: In(data.menuIds),
+          });
+
+          const casbinRules = apis.map(api => {
+            const casbinRule = new CasbinRule();
+            casbinRule.ptype = 'p';
+            casbinRule.v0 = data.id;
+            casbinRule.v1 = api.path;
+            casbinRule.v2 = api.method;
+            casbinRule.v3 = api.menuId;
+
+            return casbinRule;
+          });
+          await manager
+            .createQueryBuilder()
+            .insert()
+            .into(CasbinRule)
+            .values(casbinRules)
+            .execute();
+
+          this.casbinWatcher.publishData();
         }
       }
     });
@@ -136,7 +208,15 @@ export class RoleService extends BaseService<RoleEntity> {
         .from(RoleMenuEntity)
         .where('roleId = :id', { id })
         .execute();
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from(CasbinRule)
+        .where({ ptype: 'p', v0: id })
+        .execute();
     });
+
+    await this.casbinWatcher.publishData();
   }
 
   async getRoleListByPage(rolePageDTO: RolePageDTO) {
@@ -179,9 +259,39 @@ export class RoleService extends BaseService<RoleEntity> {
       roleMenus.push(roleMenu);
     });
 
-    await this.defaultDataSource.transaction(async transaction => {
-      await Promise.all([transaction.remove(RoleMenuEntity, curRoleMenus)]);
-      await Promise.all([transaction.save(RoleMenuEntity, roleMenus)]);
+    await this.defaultDataSource.transaction(async manager => {
+      await Promise.all([
+        manager.remove(RoleMenuEntity, curRoleMenus),
+        manager.save(RoleMenuEntity, roleMenus),
+      ]);
+
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from(CasbinRule)
+        .where({ ptype: 'p', v0: roleId })
+        .execute();
+
+      const apis = await this.menuApiModel.findBy({
+        menuId: In(menuIds),
+      });
+
+      const casbinRules = apis.map(api => {
+        const casbinRule = new CasbinRule();
+        casbinRule.ptype = 'p';
+        casbinRule.v0 = roleId;
+        casbinRule.v1 = api.path;
+        casbinRule.v2 = api.method;
+        casbinRule.v3 = api.menuId;
+
+        return casbinRule;
+      });
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(CasbinRule)
+        .values(casbinRules)
+        .execute();
 
       const oldMenuIds = curRoleMenus.map(menu => menu.menuId);
       if (oldMenuIds.length !== menuIds.length) {
@@ -214,5 +324,7 @@ export class RoleService extends BaseService<RoleEntity> {
         });
       }
     });
+
+    await this.casbinWatcher.publishData();
   }
 }

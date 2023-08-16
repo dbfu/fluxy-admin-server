@@ -24,3 +24,20 @@ export const getAddressByIp = (ip: string): string => {
 export const getUserAgent = (ctx: Context): useragent.Agent => {
   return useragent.parse(ctx.headers['user-agent'] as string);
 };
+
+/**
+ * 获取不包含前缀的api
+ * @param globalPrefix 前缀
+ * @param url url
+ * @returns url
+ */
+export const getUrlExcludeGlobalPrefix = (
+  globalPrefix: string,
+  url: string
+) => {
+  if (url.startsWith(globalPrefix)) {
+    return url.substring(globalPrefix.length);
+  }
+
+  return url;
+};

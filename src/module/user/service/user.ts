@@ -18,6 +18,9 @@ import { UserRoleEntity } from '../entity/user.role';
 import { RoleEntity } from '../../role/entity/role';
 import { SocketService } from '../../../socket/service';
 import { SocketMessageType } from '../../../socket/message';
+import { CasbinEnforcerService } from '@midwayjs/casbin';
+import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
+import { NodeRedisWatcher } from '@midwayjs/casbin-redis-adapter';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
@@ -37,6 +40,10 @@ export class UserService extends BaseService<UserEntity> {
   userRoleModel: Repository<UserRoleEntity>;
   @Inject()
   socketService: SocketService;
+  @Inject()
+  casbinEnforcerService: CasbinEnforcerService;
+  @Inject()
+  casbinWatcher: NodeRedisWatcher;
 
   getModel(): Repository<UserEntity> {
     return this.userModel;
@@ -104,6 +111,23 @@ export class UserService extends BaseService<UserEntity> {
         })
       );
 
+      // 构造策略对象
+      const casbinRules = userDTO.roleIds.map(roleId => {
+        const casbinRule = new CasbinRule();
+        casbinRule.ptype = 'g';
+        casbinRule.v0 = userDTO.id;
+        casbinRule.v1 = roleId;
+        return casbinRule;
+      });
+
+      // 保存策略
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(CasbinRule)
+        .values(casbinRules)
+        .execute();
+
       this.mailService.sendMail({
         to: email,
         subject: 'fluxy-admin平台账号创建成功',
@@ -115,6 +139,9 @@ export class UserService extends BaseService<UserEntity> {
         </div>`,
       });
     });
+
+    // 发消息给其它进程，同步最新的策略
+    await this.casbinWatcher.publishData();
 
     // 把entity中的password移除返回给前端
     return omit(entity, ['password']) as UserVO;
@@ -145,27 +172,49 @@ export class UserService extends BaseService<UserEntity> {
     });
 
     await this.defaultDataSource.transaction(async manager => {
-      await manager
-        .createQueryBuilder()
-        .update(UserEntity)
-        .set({
-          nickName,
-          phoneNumber,
-          sex,
-        })
-        .where('id = :id', { id: userDTO.id })
-        .execute();
-      // 先删除当前用户所有角色
-      await manager.remove(UserRoleEntity, userRolesMap);
-      await manager.save(
-        UserRoleEntity,
-        userDTO.roleIds.map(roleId => {
-          const userRole = new UserRoleEntity();
-          userRole.roleId = roleId;
-          userRole.userId = userDTO.id;
-          return userRole;
-        })
-      );
+      const casbinRules = userDTO.roleIds.map(roleId => {
+        const casbinRule = new CasbinRule();
+        casbinRule.ptype = 'g';
+        casbinRule.v0 = userDTO.id;
+        casbinRule.v1 = roleId;
+        return casbinRule;
+      });
+
+      Promise.all([
+        manager
+          .createQueryBuilder()
+          .update(UserEntity)
+          .set({
+            nickName,
+            phoneNumber,
+            sex,
+          })
+          .where('id = :id', { id: userDTO.id })
+          .execute(),
+        manager.remove(UserRoleEntity, userRolesMap),
+        manager.save(
+          UserRoleEntity,
+          userDTO.roleIds.map(roleId => {
+            const userRole = new UserRoleEntity();
+            userRole.roleId = roleId;
+            userRole.userId = userDTO.id;
+            return userRole;
+          })
+        ),
+        await manager
+          .createQueryBuilder()
+          .delete()
+          .from(CasbinRule)
+          .where({ ptype: 'g', v0: userDTO.id })
+          .execute(),
+        await manager
+          .createQueryBuilder()
+          .insert()
+          .into(CasbinRule)
+          .values(casbinRules)
+          .execute(),
+      ]);
+
       // 根据当前用户id在文件表里查询
       const fileRecord = await this.fileModel.findOneBy({
         pkValue: id,
@@ -211,19 +260,21 @@ export class UserService extends BaseService<UserEntity> {
         this.socketService.sendMessage(userDTO.id, {
           type: SocketMessageType.PermissionChange,
         });
-        return;
-      }
+      } else {
+        // 因为数组都是数字，所以先排序，排序之后把数组转换为字符串比较，写法比较简单
+        const sortOldRoleIds = oldRoleIds.sort();
+        const sortRoleIds = userDTO.roleIds.sort();
 
-      // 因为数组都是数字，所以先排序，排序之后把数组转换为字符串比较，写法比较简单
-      const sortOldRoleIds = oldRoleIds.sort();
-      const sortRoleIds = userDTO.roleIds.sort();
-
-      if (sortOldRoleIds.join() !== sortRoleIds.join()) {
-        this.socketService.sendMessage(userDTO.id, {
-          type: SocketMessageType.PermissionChange,
-        });
+        if (sortOldRoleIds.join() !== sortRoleIds.join()) {
+          this.socketService.sendMessage(userDTO.id, {
+            type: SocketMessageType.PermissionChange,
+          });
+        }
       }
     });
+
+    // 发消息给其它进程，同步最新的策略
+    await this.casbinWatcher.publishData();
 
     const entity = this.userModel.findOneBy({ id });
     return omit(entity, ['password']) as UserVO;
@@ -254,8 +305,20 @@ export class UserService extends BaseService<UserEntity> {
         ...refreshTokens.map(refreshToken =>
           this.redisService.del(`refreshToken:${refreshToken}`)
         ),
+        manager
+          .createQueryBuilder()
+          .delete()
+          .from(CasbinRule)
+          .where({ ptype: 'g', v0: id })
+          .execute(),
+        ...tokens.map(token => this.redisService.del(`token:${token}`)),
+        ...refreshTokens.map(refreshToken =>
+          this.redisService.del(`refreshToken:${refreshToken}`)
+        ),
       ]);
     });
+
+    await this.casbinWatcher.publishData();
   }
 
   async page<T>(page = 0, pageSize = 10, where?: FindOptionsWhere<T>) {
@@ -288,5 +351,22 @@ export class UserService extends BaseService<UserEntity> {
 
   async getByEmail(email: string) {
     return await this.userModel.findOneBy({ email });
+  }
+
+  async getRoleIdsByUserId(userId: string) {
+    const query = this.userModel.createQueryBuilder('t');
+
+    const user = (await query
+      .where('t.id = :id', { id: userId })
+      .leftJoinAndSelect(UserRoleEntity, 'userRole', 't.id = userRole.userId')
+      .leftJoinAndMapMany(
+        't.roles',
+        RoleEntity,
+        'role',
+        'role.id = userRole.roleId'
+      )
+      .getOne()) as unknown as UserVO;
+
+    return user?.roles?.map(o => o.id) || [];
   }
 }

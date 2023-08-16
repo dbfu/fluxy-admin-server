@@ -22,7 +22,7 @@ import { generateRandomCode } from '../../../utils/uuid';
 import { RedisService } from '@midwayjs/redis';
 
 @Provide()
-@Controller('/user')
+@Controller('/user', { description: '用户管理' })
 export class UserController {
   @Inject()
   userService: UserService;
@@ -83,7 +83,7 @@ export class UserController {
     return await this.userService.page(page, size, query);
   }
 
-  @Post('/send/email/captcha')
+  @Post('/send/email/captcha', { description: '发送邮箱验证码' })
   async sendEmailCaptcha(@Body() emailInfo: { email: string }) {
     if (!emailInfo.email) {
       throw R.error('邮箱不能为空');

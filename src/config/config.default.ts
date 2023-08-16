@@ -1,131 +1,159 @@
-import { MidwayConfig } from '@midwayjs/core';
+import { MidwayAppInfo } from '@midwayjs/core';
 import * as redisStore from 'cache-manager-ioredis';
 import { TokenConfig } from '../interface/token.config';
 import { env } from 'process';
 import { MailConfig, MinioConfig } from '../interface';
 import { EverythingSubscriber } from '../typeorm-event-subscriber';
+import { join } from 'path';
+import { createWatcher } from '@midwayjs/casbin-redis-adapter';
 
-export default {
-  // use for cookie sign key, should change to your own and keep security
-  keys: '1684629293601_5943',
-  koa: {
-    port: 7001,
-    globalPrefix: '/api',
-  },
-  typeorm: {
-    dataSource: {
-      default: {
-        /**
-         * 单数据库实例
-         */
-        type: 'mysql',
-        host: 'localhost', // 数据库ip地址，本地就写localhost
-        port: 3306,
-        username: 'root',
-        password: '12345678',
-        database: 'fluxy-admin', // 数据库名称
-        synchronize: true, // 如果第一次使用，不存在表，有同步的需求可以写 true，注意会丢数据
-        logging: true,
-        // 扫描entity文件夹
-        entities: ['**/entity/*{.ts,.js}'],
-        timezone: '+00:00',
-        migrations: ['**/migration/*.ts'],
-        cli: {
-          migrationsDir: 'migration',
+import { createAdapter, CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
+
+export default (appInfo: MidwayAppInfo) => {
+  return {
+    // use for cookie sign key, should change to your own and keep security
+    keys: '1684629293601_5943',
+    koa: {
+      port: 7001,
+      globalPrefix: '/api',
+    },
+    typeorm: {
+      dataSource: {
+        default: {
+          /**
+           * 单数据库实例
+           */
+          type: 'mysql',
+          host: 'localhost', // 数据库ip地址，本地就写localhost
+          port: 3306,
+          username: 'root',
+          password: '12345678',
+          database: 'fluxy-admin', // 数据库名称
+          synchronize: true, // 如果第一次使用，不存在表，有同步的需求可以写 true，注意会丢数据
+          logging: true,
+          // 扫描entity文件夹
+          entities: ['**/entity/*{.ts,.js}', CasbinRule],
+          timezone: '+00:00',
+          migrations: ['**/migration/*.ts', CasbinRule],
+          cli: {
+            migrationsDir: 'migration',
+          },
+          subscribers: [EverythingSubscriber],
         },
-        subscribers: [EverythingSubscriber],
       },
     },
-  },
-  redis: {
-    clients: {
-      default: {
-        port: 6379, // Redis port
-        host: env.REDIS_HOST || 'localhost', // Redis host
+    redis: {
+      clients: {
+        default: {
+          port: 6379, // Redis port
+          host: env.REDIS_HOST || 'localhost', // Redis host
+          password: env.REDIS_PASSWORD || '',
+          db: 0,
+        },
+        publish: {
+          port: 6379, // Redis port
+          host: env.REDIS_HOST || 'localhost', // Redis host
+          password: env.REDIS_PASSWORD || '',
+          db: 1,
+        },
+        subscribe: {
+          port: 6379, // Redis port
+          host: env.REDIS_HOST || 'localhost', // Redis host
+          password: env.REDIS_PASSWORD || '',
+          db: 2,
+        },
+        'node-casbin-official': {
+          port: 6379, // Redis port
+          host: env.REDIS_HOST || 'localhost', // Redis host
+          password: env.REDIS_PASSWORD || '',
+          db: 3,
+        },
+        'node-casbin-sub': {
+          port: 6379, // Redis port
+          host: env.REDIS_HOST || 'localhost', // Redis host
+          password: env.REDIS_PASSWORD || '',
+          db: 3,
+        },
+      },
+    },
+    i18n: {
+      // 把你的翻译文本放到这里
+      localeTable: {
+        en_US: require('../locales/en_US'),
+        zh_CN: require('../locales/zh_CN'),
+      },
+      defaultLocale: 'zh_CN',
+    },
+    validate: {
+      validationOptions: {
+        allowUnknown: true,
+      },
+    },
+    token: {
+      expire: 60 * 60 * 2, // 2小时
+      refreshExpire: 60 * 60 * 24 * 7, // 7天
+    } as TokenConfig,
+    cache: {
+      store: redisStore,
+      options: {
+        host: env.REDIS_HOST || 'localhost', // default value
+        port: 6379, // default value
         password: env.REDIS_PASSWORD || '',
         db: 0,
-      },
-      publish: {
-        port: 6379, // Redis port
-        host: env.REDIS_HOST || 'localhost', // Redis host
-        password: env.REDIS_PASSWORD || '',
-        db: 1,
-      },
-      subscribe: {
-        port: 6379, // Redis port
-        host: env.REDIS_HOST || 'localhost', // Redis host
-        password: env.REDIS_PASSWORD || '',
-        db: 2,
+        keyPrefix: 'cache:',
+        ttl: 100,
       },
     },
-  },
-  i18n: {
-    // 把你的翻译文本放到这里
-    localeTable: {
-      en_US: require('../locales/en_US'),
-      zh_CN: require('../locales/zh_CN'),
+    captcha: {
+      default: {
+        size: 4,
+        noise: 1,
+        width: 120,
+        height: 40,
+      },
+      image: {
+        type: 'mixed',
+      },
+      formula: {},
+      text: {},
+      expirationTime: 3600,
+      idPrefix: 'captcha',
     },
-    defaultLocale: 'zh_CN',
-  },
-  validate: {
-    validationOptions: {
-      allowUnknown: true,
-    },
-  },
-  token: {
-    expire: 60 * 60 * 2, // 2小时
-    refreshExpire: 60 * 60 * 24 * 7, // 7天
-  } as TokenConfig,
-  cache: {
-    store: redisStore,
-    options: {
-      host: env.REDIS_HOST || 'localhost', // default value
-      port: 6379, // default value
-      password: env.REDIS_PASSWORD || '',
-      db: 0,
-      keyPrefix: 'cache:',
-      ttl: 100,
-    },
-  },
-  captcha: {
-    default: {
-      size: 4,
-      noise: 1,
-      width: 120,
-      height: 40,
-    },
-    image: {
-      type: 'mixed',
-    },
-    formula: {},
-    text: {},
-    expirationTime: 3600,
-    idPrefix: 'captcha',
-  },
-  minio: {
-    endPoint: env.MINIO_HOST || 'localhost',
-    port: env.MINIO_PORT ? Number(env.MINIO_PORT) : 9002,
-    useSSL: false,
-    accessKey: env.MINIO_ACCESS_KEY || 'root',
-    secretKey: env.MINIO_SECRET_KEY || '12345678',
-    bucketName: env.MINIO_BUCKET_NAME || 'fluxy-admin',
-  } as MinioConfig,
-  bull: {
-    defaultQueueOptions: {
-      redis: {
-        port: 6379,
-        host: env.REDIS_HOST || 'localhost',
-        password: env.REDIS_PASSWORD || '',
+    minio: {
+      endPoint: env.MINIO_HOST || 'localhost',
+      port: env.MINIO_PORT ? Number(env.MINIO_PORT) : 9002,
+      useSSL: false,
+      accessKey: env.MINIO_ACCESS_KEY || 'root',
+      secretKey: env.MINIO_SECRET_KEY || '12345678',
+      bucketName: env.MINIO_BUCKET_NAME || 'fluxy-admin',
+    } as MinioConfig,
+    bull: {
+      defaultQueueOptions: {
+        redis: {
+          port: 6379,
+          host: env.REDIS_HOST || 'localhost',
+          password: env.REDIS_PASSWORD || '',
+        },
       },
     },
-  },
-  mail: {
-    host: env.MAIL_HOST || 'smtp.qq.com',
-    port: env.MAIL_PORT ? Number(env.MAIL_PORT) : 465,
-    secure: true,
-    auth: {
-      user: env.MAIL_USER,
-      pass: env.MAIL_PASS,
+    mail: {
+      host: env.MAIL_HOST || 'smtp.qq.com',
+      port: env.MAIL_PORT ? Number(env.MAIL_PORT) : 465,
+      secure: true,
+      auth: {
+        user: env.MAIL_USER,
+        pass: env.MAIL_PASS,
+      },
+    } as MailConfig,
+    casbin: {
+      modelPath: join(appInfo.appDir, 'src/basic_model.conf'),
+      policyAdapter: createAdapter({
+        dataSourceName: 'default',
+      }),
+      policyWatcher: createWatcher({
+        pubClientName: 'node-casbin-official',
+        subClientName: 'node-casbin-sub',
+      }),
     },
-  } as MailConfig,
-} as MidwayConfig;
+  };
+};

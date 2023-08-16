@@ -1,4 +1,4 @@
-import { Configuration, App } from '@midwayjs/core';
+import { Configuration, App, Inject } from '@midwayjs/core';
 import * as koa from '@midwayjs/koa';
 import * as validate from '@midwayjs/validate';
 import * as info from '@midwayjs/info';
@@ -19,6 +19,8 @@ import { UnauthorizedErrorFilter } from './filter/unauthorized.filter';
 import { DefaultErrorFilter } from './filter/default.filter';
 import * as dotenv from 'dotenv';
 import * as ws from '@midwayjs/ws';
+import { CasbinEnforcerService } from '@midwayjs/casbin';
+import * as casbin from '@midwayjs/casbin';
 
 dotenv.config();
 
@@ -41,12 +43,15 @@ dotenv.config();
       component: info,
       enabledEnvironment: ['local'],
     },
+    casbin,
   ],
   importConfigs: [join(__dirname, './config')],
 })
 export class ContainerLifeCycle {
   @App()
   app: koa.Application;
+  @Inject()
+  casbinEnforcerService: CasbinEnforcerService;
 
   async onReady() {
     // add middleware
@@ -59,5 +64,7 @@ export class ContainerLifeCycle {
       UnauthorizedErrorFilter,
       DefaultErrorFilter,
     ]);
+
+    this.casbinEnforcerService.enableAutoSave(false);
   }
 }

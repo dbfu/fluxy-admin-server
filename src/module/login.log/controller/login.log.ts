@@ -17,7 +17,7 @@ import { FindOptionsWhere, Like } from 'typeorm';
 import { LoginLogEntity } from '../entity/login.log';
 
 @Provide()
-@Controller('/login-log')
+@Controller('/login-log', { description: '登录日志' })
 export class LoginLogController {
   @Inject()
   loginLogService: LoginLogService;

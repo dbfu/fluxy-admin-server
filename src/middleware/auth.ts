@@ -4,10 +4,13 @@ import {
   Inject,
   MidwayWebRouterService,
   RouterInfo,
+  Config,
 } from '@midwayjs/core';
 import { NextFunction, Context } from '@midwayjs/koa';
 import { R } from '../common/base.error.util';
 import { RedisService } from '@midwayjs/redis';
+import { CasbinEnforcerService } from '@midwayjs/casbin';
+import { getUrlExcludeGlobalPrefix } from '../utils/utils';
 
 @Middleware()
 export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
@@ -17,6 +20,12 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
   webRouterService: MidwayWebRouterService;
   @Inject()
   notLoginRouters: RouterInfo[];
+  @Inject()
+  notAuthRouters: RouterInfo[];
+  @Config('koa.globalPrefix')
+  globalPrefix: string;
+  @Inject()
+  casbinEnforcerService: CasbinEnforcerService;
 
   resolve() {
     return async (ctx: Context, next: NextFunction) => {
@@ -55,6 +64,29 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
 
       ctx.userInfo = userInfo;
       ctx.token = token;
+
+      // 过滤掉不需要鉴权的接口
+      if (
+        this.notAuthRouters.some(
+          o =>
+            o.requestMethod === routeInfo.requestMethod &&
+            o.url === routeInfo.url
+        )
+      ) {
+        await next();
+        return;
+      }
+
+      const matched = await this.casbinEnforcerService.enforce(
+        ctx.userInfo.userId,
+        getUrlExcludeGlobalPrefix(this.globalPrefix, routeInfo.fullUrl),
+        routeInfo.requestMethod
+      );
+
+      if (!matched && ctx.userInfo.userId !== '1') {
+        throw R.forbiddenError('你没有访问该资源的权限');
+      }
+
       return next();
     };
   }

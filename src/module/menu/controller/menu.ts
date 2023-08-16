@@ -38,7 +38,7 @@ export class MenuController {
 
   @Put('/', { description: '更新菜单' })
   async update(@Body() data: MenuDTO) {
-    return await this.menuService.edit(data.toEntity());
+    return await this.menuService.editMenu(data);
   }
 
   @Get('/page', { description: '分页查询菜单' })

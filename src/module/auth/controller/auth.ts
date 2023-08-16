@@ -24,8 +24,9 @@ import { uuid } from '../../../utils/uuid';
 import { MailService } from '../../../common/mail.service';
 import { ResetPasswordDTO } from '../dto/reset.password';
 import { RSAService } from '../../../common/rsa.service';
+import { NotAuth } from '../../../decorator/not.auth';
 @Provide()
-@Controller('/auth')
+@Controller('/auth', { description: '权限管理' })
 export class AuthController {
   @Inject()
   authService: AuthService;
@@ -69,7 +70,7 @@ export class AuthController {
     return this.authService.refreshToken(data);
   }
 
-  @Get('/captcha')
+  @Get('/captcha', { description: '获取验证码' })
   @NotLogin()
   async getImageCaptcha() {
     const { id, imageBase64 } = await this.captchaService.formula({
@@ -91,11 +92,13 @@ export class AuthController {
   }
 
   @Get('/current/user')
+  @NotAuth()
   async getCurrentUser(): Promise<UserVO> {
     return await this.authService.getUserById(this.ctx.userInfo.userId);
   }
 
   @Post('/logout')
+  @NotAuth()
   async logout(): Promise<boolean> {
     // 清除token和refreshToken
     const res = await this.redisService
@@ -112,6 +115,7 @@ export class AuthController {
   }
 
   @NotLogin()
+  @NotAuth()
   @Post('/send/reset/password/email')
   async sendResetPasswordEmail(@Body() emailInfo: { email: string }) {
     if (!emailInfo.email) {

@@ -1,21 +1,30 @@
-import { Provide } from '@midwayjs/decorator';
+import { Inject, Provide } from '@midwayjs/decorator';
 import { DataSource, FindOptionsOrder, IsNull } from 'typeorm';
 import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { BaseService } from '../../../common/base.service';
 import { MenuEntity } from '../entity/menu';
 import { R } from '../../../common/base.error.util';
-import { MenuInterfaceEntity } from '../entity/menu.interface';
+import { MenuApiEntity } from '../entity/menu.api';
 import { MenuDTO } from '../dto/menu';
+import { RoleMenuEntity } from '../../role/entity/role.menu';
+import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
+import { CasbinEnforcerService } from '@midwayjs/casbin';
 
 @Provide()
 export class MenuService extends BaseService<MenuEntity> {
   @InjectEntityModel(MenuEntity)
   menuModel: Repository<MenuEntity>;
-  @InjectEntityModel(MenuInterfaceEntity)
-  menuInterfaceModel: Repository<MenuInterfaceEntity>;
+  @InjectEntityModel(MenuApiEntity)
+  menuApiModel: Repository<MenuApiEntity>;
+  @InjectEntityModel(RoleMenuEntity)
+  roleMenuModel: Repository<RoleMenuEntity>;
   @InjectDataSource()
   defaultDataSource: DataSource;
+  @InjectEntityModel(CasbinRule)
+  casbinModel: Repository<CasbinRule>;
+  @Inject()
+  casbinEnforcerService: CasbinEnforcerService;
 
   getModel(): Repository<MenuEntity> {
     return this.menuModel;
@@ -36,7 +45,94 @@ export class MenuService extends BaseService<MenuEntity> {
       throw R.error('权限代码不能重复');
     }
 
-    return await this.create(data.toEntity());
+    const entity = data.toEntity();
+
+    await this.create(entity);
+
+    const menuApis = data.apis.map(api => {
+      const menuApi = new MenuApiEntity();
+      menuApi.menuId = entity.id;
+      menuApi.path = api.path;
+      menuApi.method = api.method;
+      return menuApi;
+    });
+
+    await this.menuApiModel
+      .createQueryBuilder()
+      .insert()
+      .values(menuApis)
+      .execute();
+
+    return entity;
+  }
+
+  async editMenu(data: MenuDTO) {
+    const entity = data.toEntity();
+
+    this.defaultDataSource.transaction(async manager => {
+      const tasks = [];
+
+      manager.delete(MenuApiEntity, {});
+
+      manager
+        .createQueryBuilder()
+        .delete()
+        .from(MenuApiEntity)
+        .where({ menuId: entity.id })
+        .execute();
+
+      tasks.push(manager.save(MenuEntity, entity));
+
+      const roleMenus = await this.roleMenuModel.findBy({ menuId: entity.id });
+
+      tasks.push(
+        manager
+          .createQueryBuilder()
+          .delete()
+          .from(CasbinRule)
+          .where({ v3: entity.id })
+          .execute()
+      );
+
+      const menuApis = data.apis.map(api => {
+        const menuApi = new MenuApiEntity();
+        menuApi.menuId = entity.id;
+        menuApi.path = api.path;
+        menuApi.method = api.method;
+        return menuApi;
+      });
+
+      tasks.push(
+        manager
+          .createQueryBuilder()
+          .insert()
+          .into(MenuApiEntity)
+          .values(menuApis)
+          .execute()
+      );
+
+      const casbinRules = roleMenus.reduce((prev, cur) => {
+        prev.push(
+          ...data.apis.map(api => {
+            return this.casbinEnforcerService.addPermissionForUser(
+              entity.id,
+              api.path,
+              api.method,
+              cur.menuId
+            );
+          })
+        );
+        return prev;
+      }, []);
+
+      tasks.push(Promise.all(casbinRules));
+
+      await Promise.all(tasks);
+
+      await this.casbinEnforcerService.savePolicy();
+    });
+
+    return entity;
   }
 
   async page(
@@ -115,7 +211,7 @@ export class MenuService extends BaseService<MenuEntity> {
   }
 
   async getAllocInterfaceByMenu(menuId: string) {
-    const menuInterfaces = await this.menuInterfaceModel.findBy({
+    const menuInterfaces = await this.menuApiModel.findBy({
       menuId,
     });
     return menuInterfaces;

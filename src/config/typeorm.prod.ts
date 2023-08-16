@@ -1,4 +1,5 @@
 import { env } from 'process';
+import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
 
 export default {
   typeorm: {
@@ -12,9 +13,9 @@ export default {
         database: env.DB_NAME || 'fluxy-admin',
         synchronize: false,
         logging: false,
-        entities: ['**/entity/*{.ts,.js}'],
+        entities: ['**/entity/*{.ts,.js}', CasbinRule],
         timezone: '+00:00',
-        migrations: ['**/migration/*.ts'],
+        migrations: ['**/migration/*.ts', CasbinRule],
         cli: {
           migrationsDir: 'migration',
         },

@@ -245,10 +245,8 @@ export class RoleService extends BaseService<RoleEntity> {
     });
 
     await this.defaultDataSource.transaction(async manager => {
-      await Promise.all([
-        manager.remove(RoleMenuEntity, curRoleMenus),
-        manager.save(RoleMenuEntity, roleMenus),
-      ]);
+      await manager.remove(RoleMenuEntity, curRoleMenus);
+      await manager.save(RoleMenuEntity, roleMenus);
 
       await manager
         .createQueryBuilder()

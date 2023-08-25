@@ -10,6 +10,7 @@ import { MenuDTO } from '../dto/menu';
 import { RoleMenuEntity } from '../../role/entity/role.menu';
 import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
 import { CasbinEnforcerService } from '@midwayjs/casbin';
+import { NodeRedisWatcher } from '@midwayjs/casbin-redis-adapter';
 
 @Provide()
 export class MenuService extends BaseService<MenuEntity> {
@@ -25,6 +26,8 @@ export class MenuService extends BaseService<MenuEntity> {
   casbinModel: Repository<CasbinRule>;
   @Inject()
   casbinEnforcerService: CasbinEnforcerService;
+  @Inject()
+  casbinWatcher: NodeRedisWatcher;
 
   getModel(): Repository<MenuEntity> {
     return this.menuModel;
@@ -69,30 +72,26 @@ export class MenuService extends BaseService<MenuEntity> {
   async editMenu(data: MenuDTO) {
     const entity = data.toEntity();
 
-    this.defaultDataSource.transaction(async manager => {
-      const tasks = [];
+    await this.defaultDataSource.transaction(async manager => {
+      await manager.delete(MenuApiEntity, {});
 
-      manager.delete(MenuApiEntity, {});
-
-      manager
+      await manager
         .createQueryBuilder()
         .delete()
         .from(MenuApiEntity)
         .where({ menuId: entity.id })
         .execute();
 
-      tasks.push(manager.save(MenuEntity, entity));
+      await manager.save(MenuEntity, entity);
 
       const roleMenus = await this.roleMenuModel.findBy({ menuId: entity.id });
 
-      tasks.push(
-        manager
-          .createQueryBuilder()
-          .delete()
-          .from(CasbinRule)
-          .where({ v3: entity.id })
-          .execute()
-      );
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from(CasbinRule)
+        .where({ v3: entity.id })
+        .execute();
 
       const menuApis = data.apis.map(api => {
         const menuApi = new MenuApiEntity();
@@ -102,14 +101,12 @@ export class MenuService extends BaseService<MenuEntity> {
         return menuApi;
       });
 
-      tasks.push(
-        manager
-          .createQueryBuilder()
-          .insert()
-          .into(MenuApiEntity)
-          .values(menuApis)
-          .execute()
-      );
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(MenuApiEntity)
+        .values(menuApis)
+        .execute();
 
       const casbinRules = roleMenus.reduce((prev, cur) => {
         prev.push(
@@ -125,12 +122,10 @@ export class MenuService extends BaseService<MenuEntity> {
         return prev;
       }, []);
 
-      tasks.push(Promise.all(casbinRules));
-
-      await Promise.all(tasks);
-
-      await this.casbinEnforcerService.savePolicy();
+      await Promise.all(casbinRules);
     });
+
+    await this.casbinWatcher.publishData();
 
     return entity;
   }

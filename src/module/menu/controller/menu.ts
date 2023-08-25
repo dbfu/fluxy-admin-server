@@ -14,7 +14,6 @@ import { NotLogin } from '../../../decorator/not.login';
 import { MenuDTO } from '../dto/menu';
 import { MenuService } from '../service/menu';
 import { R } from '../../../common/base.error.util';
-import { RuleType, Valid } from '@midwayjs/validate';
 
 @Provide()
 @Controller('/menu', { description: '菜单管理' })

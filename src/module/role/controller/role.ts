@@ -10,7 +10,6 @@ import {
   Param,
   Put,
 } from '@midwayjs/decorator';
-import { RuleType, Valid } from '@midwayjs/validate';
 import { RoleDTO } from '../dto/role';
 import { RolePageDTO } from '../dto/role.page';
 import { RoleService } from '../service/role';

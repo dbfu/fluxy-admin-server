@@ -84,22 +84,8 @@ export class RoleService extends BaseService<RoleEntity> {
         .into(CasbinRule)
         .values(casbinRules)
         .execute();
-
-      this.casbinWatcher.publishData();
-
-      await Promise.all(
-        apis.map(api => {
-          return this.casbinEnforcerService.addPermissionForUser(
-            entity.id,
-            api.path,
-            api.method,
-            api.menuId
-          );
-        })
-      );
-
-      await this.casbinEnforcerService.savePolicy();
     });
+    this.casbinWatcher.publishData();
   }
 
   async editRole(data: RoleDTO) {
@@ -187,11 +173,10 @@ export class RoleService extends BaseService<RoleEntity> {
             .into(CasbinRule)
             .values(casbinRules)
             .execute();
-
-          this.casbinWatcher.publishData();
         }
       }
     });
+    this.casbinWatcher.publishData();
   }
 
   async removeRole(id: string) {

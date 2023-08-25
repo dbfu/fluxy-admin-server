@@ -35,10 +35,12 @@ export class RoleController {
 
   @Del('/:id', { description: '删除角色' })
   async remove(
-    @Valid(RuleType.number().required().error(R.error('id不能为空')))
     @Param('id')
     id: string
   ) {
+    if (!id) {
+      throw R.validateError('id不能为空');
+    }
     return await this.roleService.removeRole(id);
   }
 

@@ -29,10 +29,12 @@ export class MenuController {
 
   @Del('/:id', { description: '删除一个菜单' })
   async remove(
-    @Valid(RuleType.number().required().error(R.error('id不能为空')))
     @Param('id')
     id: string
   ) {
+    if (!id) {
+      throw R.validateError('id不能为空');
+    }
     return await this.menuService.removeMenu(id);
   }
 

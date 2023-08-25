@@ -73,8 +73,6 @@ export class MenuService extends BaseService<MenuEntity> {
     const entity = data.toEntity();
 
     await this.defaultDataSource.transaction(async manager => {
-      await manager.delete(MenuApiEntity, {});
-
       await manager
         .createQueryBuilder()
         .delete()

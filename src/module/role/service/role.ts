@@ -74,7 +74,7 @@ export class RoleService extends BaseService<RoleEntity> {
         casbinRule.v0 = entity.id;
         casbinRule.v1 = api.path;
         casbinRule.v2 = api.method;
-        casbinRule.v2 = api.menuId;
+        casbinRule.v3 = api.menuId;
         return casbinRule;
       });
 

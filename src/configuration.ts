@@ -21,6 +21,7 @@ import * as dotenv from 'dotenv';
 import * as ws from '@midwayjs/ws';
 import { CasbinEnforcerService } from '@midwayjs/casbin';
 import * as casbin from '@midwayjs/casbin';
+import { SentryMiddleware } from './middleware/sentry';
 
 dotenv.config();
 
@@ -55,7 +56,7 @@ export class ContainerLifeCycle {
 
   async onReady() {
     // add middleware
-    this.app.useMiddleware([AuthMiddleware]);
+    this.app.useMiddleware([SentryMiddleware, AuthMiddleware]);
     // add filter
     this.app.useFilter([
       ValidateErrorFilter,

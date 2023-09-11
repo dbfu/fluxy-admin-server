@@ -28,7 +28,6 @@ export class SentryMiddleware implements IMiddleware<Context, NextFunction> {
             });
 
             ctx.__sentry_transaction = transaction;
-
             await next();
 
             if (ctx._matchedRoute) {

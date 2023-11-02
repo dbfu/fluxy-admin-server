@@ -1,26 +1,26 @@
 import { Inject, Provide } from '@midwayjs/decorator';
 import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
-import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { omit } from 'lodash';
+import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 
-import { BaseService } from '../../../common/base.service';
-import { UserEntity } from '../entity/user';
-import { R } from '../../../common/base.error.util';
-import { UserVO } from '../vo/user';
-import { FileService } from '../../file/service/file';
-import { FileEntity } from '../../file/entity/file';
-import { UserDTO } from '../dto/user';
-import { RedisService } from '@midwayjs/redis';
-import { MailService } from '../../../common/mail.service';
-import { uuid } from '../../../utils/uuid';
-import { UserRoleEntity } from '../entity/user.role';
-import { RoleEntity } from '../../role/entity/role';
-import { SocketService } from '../../../socket/service';
-import { SocketMessageType } from '../../../socket/message';
 import { CasbinEnforcerService } from '@midwayjs/casbin';
-import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
 import { NodeRedisWatcher } from '@midwayjs/casbin-redis-adapter';
+import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
+import { RedisService } from '@midwayjs/redis';
+import { R } from '../../../common/base.error.util';
+import { BaseService } from '../../../common/base.service';
+import { MailService } from '../../../common/mail.service';
+import { SocketMessageType } from '../../../socket/message';
+import { SocketService } from '../../../socket/service';
+import { uuid } from '../../../utils/uuid';
+import { FileEntity } from '../../file/entity/file';
+import { FileService } from '../../file/service/file';
+import { RoleEntity } from '../../role/entity/role';
+import { UserDTO } from '../dto/user';
+import { UserEntity } from '../entity/user';
+import { UserRoleEntity } from '../entity/user.role';
+import { UserVO } from '../vo/user';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
@@ -338,8 +338,8 @@ export class UserService extends BaseService<UserEntity> {
         'file.pkValue = t.id and file.pkName = "user_avatar"'
       )
       .where(where)
-      .skip(page)
-      .take(page * pageSize)
+      .skip(page * pageSize)
+      .take(pageSize)
       .orderBy('t.createDate', 'DESC')
       .getManyAndCount();
 

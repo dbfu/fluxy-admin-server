@@ -1,4 +1,4 @@
-import { CreateDateColumn, UpdateDateColumn, PrimaryColumn } from 'typeorm';
+import { CreateDateColumn, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 export class BaseEntity {
   @PrimaryColumn({ comment: '主键', name: 'id', type: 'bigint' })

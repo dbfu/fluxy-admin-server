@@ -1,14 +1,6 @@
-import {
-  Controller,
-  Fields,
-  Files,
-  Inject,
-  Post,
-  Provide,
-} from '@midwayjs/core';
+import { Controller, Files, Inject, Post, Provide } from '@midwayjs/core';
 import { ApiBody } from '@midwayjs/swagger';
 import { NotLogin } from '../../../decorator/not.login';
-import { FileDTO } from '../dto/file';
 import { FileService } from '../service/file';
 
 @Provide()
@@ -21,11 +13,10 @@ export class FileController {
 
   @Post('/upload')
   @ApiBody({ description: 'file' })
-  @ApiBody({ description: 'fields', type: FileDTO })
   @NotLogin()
-  async upload(@Files() files, @Fields() fields) {
+  async upload(@Files() files) {
     if (files.length) {
-      return await this.fileService.upload(files[0], fields);
+      return await this.fileService.upload(files[0]);
     }
     return {};
   }

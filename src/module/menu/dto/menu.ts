@@ -1,15 +1,15 @@
 import { Rule, RuleType, getSchema } from '@midwayjs/validate';
+import { BaseDTO } from '../../../common/base.dto';
 import { R } from '../../../common/base.error.util';
-import { MenuEntity } from '../entity/menu';
 import {
   bool,
+  number,
+  requiredNumber,
   requiredString,
   string,
-  requiredNumber,
-  number,
 } from '../../../common/common.validate.rules';
-import { BaseDTO } from '../../../common/base.dto';
 import { ApiDTO } from '../../api/dto/api';
+import { MenuEntity } from '../entity/menu';
 
 export class MenuDTO extends BaseDTO<MenuEntity> {
   @Rule(string.allow(null))
@@ -32,6 +32,8 @@ export class MenuDTO extends BaseDTO<MenuEntity> {
   show?: boolean;
   @Rule(string.allow(null))
   authCode?: string;
+  @Rule(string.allow(null))
+  pageSetting?: string;
   @Rule(RuleType.array().items(getSchema(ApiDTO)).allow(null))
   apis?: ApiDTO[];
 }

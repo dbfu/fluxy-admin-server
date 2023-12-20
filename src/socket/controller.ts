@@ -1,15 +1,15 @@
 import {
-  WSController,
-  OnWSConnection,
   Inject,
-  OnWSMessage,
+  OnWSConnection,
   OnWSDisConnection,
+  OnWSMessage,
+  WSController,
 } from '@midwayjs/core';
 import { RedisService } from '@midwayjs/redis';
 import { Context } from '@midwayjs/ws';
 import * as http from 'http';
+import { SocketMessage, SocketMessageType } from './message';
 import { SocketService } from './service';
-import { SocketMessageType, SocketMessage } from './message';
 
 @WSController()
 export class SocketConnectController {
@@ -45,7 +45,6 @@ export class SocketConnectController {
 
     const userInfo = JSON.parse(userInfoStr);
     this.socketService.addConnect(userInfo.userId, socket);
-    console.log(this.socketService.connects, 'connects');
   }
 
   @OnWSMessage('message')

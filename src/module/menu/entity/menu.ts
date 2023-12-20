@@ -1,4 +1,4 @@
-import { Entity, Column } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { BaseEntity } from '../../../common/base.entity';
 
 @Entity('sys_menu')
@@ -9,7 +9,7 @@ export class MenuEntity extends BaseEntity {
   name?: string;
   @Column({ comment: '图标', nullable: true })
   icon?: string;
-  @Column({ comment: '类型，1:目录 2:菜单' })
+  @Column({ comment: '类型，1:目录 2:菜单 3:按钮 4:低代码页面' })
   type?: number;
   @Column({ comment: '路由', nullable: true })
   route?: string;
@@ -23,4 +23,6 @@ export class MenuEntity extends BaseEntity {
   show?: boolean;
   @Column({ comment: '按钮权限代码', nullable: true })
   authCode?: string;
+  @Column({ comment: '低代码页面当前版本号', nullable: true })
+  curVersion?: string;
 }

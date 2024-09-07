@@ -11,7 +11,7 @@ COPY . .
 
 RUN pnpm run build
 
-FROM keymetrics/pm2:16-jessie
+FROM treehouses/pm2:202409070041
 
 WORKDIR /app
 

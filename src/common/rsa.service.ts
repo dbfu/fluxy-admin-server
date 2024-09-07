@@ -27,7 +27,7 @@ export class RSAService {
     }
 
     const decrypt = new NodeRSA(privateKey);
-    decrypt.setOptions({ encryptionScheme: 'pkcs1' });
+    decrypt.setOptions({ encryptionScheme: 'pkcs1', environment: 'browser' });
     return decrypt.decrypt(data, 'utf8');
   }
 }

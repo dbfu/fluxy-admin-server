@@ -11,7 +11,7 @@ COPY . .
 
 RUN pnpm run build
 
-FROM upshow/pm2:latest
+FROM upshow/pm2:node20
 
 WORKDIR /app
 

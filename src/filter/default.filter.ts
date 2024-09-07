@@ -12,6 +12,8 @@ export class DefaultErrorFilter {
       Sentry.captureException(err, { user: { id: ctx?.userInfo?.userId } });
     });
 
+    ctx.logger.error(err);
+
     ctx.status = 500;
 
     return {

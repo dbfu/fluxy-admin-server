@@ -11,7 +11,7 @@ COPY . .
 
 RUN pnpm run build
 
-FROM bbbdevteam9x/pm2
+FROM upshow/pm2:latest
 
 WORKDIR /app
 

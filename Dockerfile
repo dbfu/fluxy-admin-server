@@ -11,7 +11,7 @@ COPY . .
 
 RUN pnpm run build
 
-FROM treehouses/pm2:202409070041
+FROM bbbdevteam9x/pm2
 
 WORKDIR /app
 

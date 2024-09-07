@@ -1,4 +1,4 @@
-FROM gplane/pnpm:8.4.0 as builder
+FROM gplane/pnpm:node20 as builder
 
 WORKDIR /app
 

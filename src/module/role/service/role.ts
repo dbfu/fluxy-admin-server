@@ -46,9 +46,10 @@ export class RoleService extends BaseService<RoleEntity> {
     if ((await this.roleModel.countBy({ code: data.code })) > 0) {
       throw R.error('代码不能重复');
     }
-    this.defaultDataSource.transaction(async manager => {
+    await this.defaultDataSource.transaction(async manager => {
       const entity = data.toEntity();
       await manager.save(RoleEntity, entity);
+      data.menuIds = data.menuIds || [];
       const roleMenus = data.menuIds.map(menuId => {
         const roleMenu = new RoleMenuEntity();
         roleMenu.menuId = menuId;

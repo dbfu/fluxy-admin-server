@@ -15,12 +15,25 @@ import { RolePageDTO } from '../dto/role.page';
 import { RoleService } from '../service/role';
 import { RoleMenuDTO } from '../dto/role.menu';
 import { R } from '../../../common/base.error.util';
+import { FilterParams } from '../../../utils/filter-query';
+import { RoleEntity } from '../entity/role';
 
 @Provide()
 @Controller('/role', { description: '角色管理' })
 export class RoleController {
   @Inject()
   roleService: RoleService;
+
+  @Get('/page', { description: '分页获取角色列表' })
+  async page(@Query() rolePageDTO: RolePageDTO) {
+    const query = new FilterParams<RoleEntity>();
+
+    query
+      .append('code', { $like: `%${rolePageDTO.code}%` }, !!rolePageDTO.code)
+      .append('name', { $like: `%${rolePageDTO.name}%` }, !!rolePageDTO.name);
+
+    return await this.roleService.getRolesByPage(rolePageDTO, query.where);
+  }
 
   @Post('/', { description: '创建角色' })
   async create(@Body() data: RoleDTO) {
@@ -29,7 +42,7 @@ export class RoleController {
 
   @Put('/', { description: '更新角色' })
   async update(@Body() data: RoleDTO) {
-    return await this.roleService.editRole(data);
+    return await this.roleService.updateRole(data);
   }
 
   @Del('/:id', { description: '删除角色' })
@@ -41,11 +54,6 @@ export class RoleController {
       throw R.validateError('id不能为空');
     }
     return await this.roleService.removeRole(id);
-  }
-
-  @Get('/page', { description: '分页获取角色列表' })
-  async page(@Query() rolePageDTO: RolePageDTO) {
-    return await this.roleService.getRoleListByPage(rolePageDTO);
   }
 
   @Post('/alloc/menu', { description: '角色分配菜单' })

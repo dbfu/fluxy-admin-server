@@ -1,6 +1,6 @@
 import { Config, Inject, Provide } from '@midwayjs/decorator';
 import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
 import { UserEntity } from '../../user/entity/user';
@@ -11,30 +11,28 @@ import { TokenConfig } from '../../../interface/token.config';
 import { RedisService } from '@midwayjs/redis';
 import { uuid } from '../../../utils/uuid';
 import { RefreshTokenDTO } from '../dto/refresh.token';
-import { Context } from 'koa';
-import { FileEntity } from '../../file/entity/file';
 import { ResetPasswordDTO } from '../dto/reset.password';
 import { RSAService } from '../../../common/rsa.service';
 import { CaptchaService } from './captcha';
 import { UserRoleEntity } from '../../user/entity/user.role';
-import { RoleEntity } from '../../role/entity/role';
 import { RoleMenuEntity } from '../../role/entity/role.menu';
 import { MenuEntity } from '../../menu/entity/menu';
 import { SocketService } from '../../../socket/service';
 import { SocketMessageType } from '../../../socket/message';
 import { LoginLogEntity } from '../../login.log/entity/login.log';
 import { getAddressByIp, getIp, getUserAgent } from '../../../utils/utils';
+import { BaseService } from '../../../common/base.service';
+import { EntityRepository } from '@mikro-orm/mysql';
+import { AssertUtils } from '../../../utils/assert';
 
 @Provide()
-export class AuthService {
+export class AuthService extends BaseService<UserEntity> {
   @InjectEntityModel(UserEntity)
   userModel: Repository<UserEntity>;
   @Config('token')
   tokenConfig: TokenConfig;
   @Inject()
   redisService: RedisService;
-  @Inject()
-  ctx: Context;
   @Inject()
   rsaService: RSAService;
   @InjectDataSource()
@@ -52,34 +50,51 @@ export class AuthService {
   @Inject()
   socketService: SocketService;
 
+  getModel(): EntityRepository<UserEntity> {
+    return this.repo(UserEntity);
+  }
+
   async login(loginDTO: LoginDTO): Promise<TokenVO> {
     const ip = getIp(this.ctx);
-    const loginLog = new LoginLogEntity();
-    loginLog.ip = ip;
-    loginLog.address = getAddressByIp(loginLog.ip);
-    loginLog.browser = getUserAgent(this.ctx).family;
-    loginLog.os = getUserAgent(this.ctx).os.toString();
-    loginLog.userName = loginDTO.accountNumber;
+
+    const loginLog = this.repo(LoginLogEntity).create({
+      ip: ip,
+      address: getAddressByIp(ip),
+      browser: getUserAgent(this.ctx).family,
+      os: getUserAgent(this.ctx).os.toString(),
+      userName: loginDTO.accountNumber,
+    });
 
     try {
       const { accountNumber } = loginDTO;
-      const user = await this.userModel
-        .createQueryBuilder('user')
-        .where('user.phoneNumber = :accountNumber', {
-          accountNumber,
-        })
-        .orWhere('user.username = :accountNumber', { accountNumber })
-        .orWhere('user.email = :accountNumber', { accountNumber })
-        .select(['user.password', 'user.id', 'user.userName'])
-        .getOne();
 
-      if (!user) {
-        throw R.error('账号或密码错误！');
-      }
+      const userRep = this.getRepository(UserEntity);
 
-      if (!bcrypt.compareSync(loginDTO.password, user.password)) {
-        throw R.error('用户名或密码错误！');
-      }
+      const user = await userRep.findOne(
+        {
+          $or: [
+            {
+              phoneNumber: { $eq: accountNumber },
+            },
+            {
+              email: { $eq: accountNumber },
+            },
+            {
+              userName: { $eq: accountNumber },
+            },
+          ],
+        },
+        {
+          populate: ['password'],
+        }
+      );
+
+      AssertUtils.notEmpty(user, '账号或密码错误');
+
+      AssertUtils.isTrue(
+        bcrypt.compareSync(loginDTO.password, user.password),
+        '用户名或密码错误'
+      );
 
       const { expire, refreshExpire } = this.tokenConfig;
 
@@ -104,9 +119,7 @@ export class AuthService {
 
       const result = await this.captchaService.check(captchaId, captcha);
 
-      if (!result) {
-        throw R.error('验证码错误');
-      }
+      AssertUtils.notEmpty(result, '验证码错误');
 
       loginLog.status = true;
       loginLog.message = '成功';
@@ -122,7 +135,7 @@ export class AuthService {
       loginLog.message = error?.message || '登录失败';
       throw error;
     } finally {
-      this.loginLogModel.save(loginLog);
+      this.em.persistAndFlush(loginLog);
     }
   }
 
@@ -158,43 +171,32 @@ export class AuthService {
   }
 
   async getUserById(userId: string) {
-    const entity = await this.userModel
-      .createQueryBuilder('t')
-      .leftJoinAndSelect(UserRoleEntity, 'user_role', 't.id = user_role.userId')
-      .leftJoinAndMapOne(
-        't.avatarEntity',
-        FileEntity,
-        'file',
-        'file.pkValue = t.id and file.pkName = "user_avatar"'
-      )
-      .leftJoinAndMapMany(
-        't.roles',
-        RoleEntity,
-        'role',
-        'role.id = user_role.roleId'
-      )
-      .where('t.id = :id', { id: userId })
-      .getOne();
+    const user = await this.repo(UserEntity).findOne(userId, {
+      populate: ['roles'],
+    });
 
-    if (!entity) {
-      throw R.error('当前用户不存在！');
+    AssertUtils.notEmpty(user, '当前用户不存在！');
+
+    let menus: MenuEntity[];
+
+    // 超级管理员获取所有菜单
+    if (userId === '1') {
+      menus = await this.repo(MenuEntity).findAll();
+    } else {
+      const roleIds = user.roles.map(o => o.id);
+
+      const menuIds = (
+        await this.repo(RoleMenuEntity).findAll({
+          where: { roleId: { $in: roleIds } },
+        })
+      ).map(role => role.menuId);
+      menus = await this.repo(MenuEntity).findAll({
+        where: { id: { $in: menuIds } },
+      });
     }
 
-    // 先把用户分配的角色查出来
-    const userRoles = await this.userRoleModel.findBy({ userId: userId });
-    // 根据已分配角色查询已分配的菜单id数组
-    const roleMenus = await this.roleMenuModel.find({
-      where: { roleId: In(userRoles.map(userRole => userRole.roleId)) },
-    });
-    // 根据菜单id数组查询菜单信息，这里加了个特殊判断，如果是管理员直接返回全部菜单，正常这个应该走数据迁移，数据迁移还没做，就先用这种方案。
-    const query = { id: In(roleMenus.map(roleMenu => roleMenu.menuId)) };
-    const menus = await this.menuModel.find({
-      where: userId === '1' ? {} : query,
-      order: { orderNumber: 'ASC', createDate: 'DESC' },
-    });
-
     return {
-      ...entity.toVO(),
+      ...user.toVO(),
       menus,
     };
   }

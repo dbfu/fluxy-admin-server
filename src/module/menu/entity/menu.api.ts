@@ -1,12 +1,12 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Property } from '@mikro-orm/core';
 import { BaseEntity } from '../../../common/base.entity';
 
-@Entity('sys_menu_api')
+@Entity({ tableName: 'sys_menu_api' })
 export class MenuApiEntity extends BaseEntity {
-  @Column({ comment: '菜单id' })
+  @Property({ comment: '菜单id' })
   menuId?: string;
-  @Column({ comment: '请求方式' })
+  @Property({ comment: '请求方式' })
   method?: string;
-  @Column({ comment: 'path' })
+  @Property({ comment: 'path' })
   path?: string;
 }

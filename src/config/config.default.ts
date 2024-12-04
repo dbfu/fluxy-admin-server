@@ -4,10 +4,14 @@ import { TokenConfig } from '../interface/token.config';
 import { env } from 'process';
 import { MailConfig, MinioConfig } from '../interface';
 import { EverythingSubscriber } from '../typeorm-event-subscriber';
+// import { join } from 'path';
+// import { createWatcher } from '@midwayjs/casbin-redis-adapter';
+
+// import { createAdapter, CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
+import mikroOrmConfig from './mikro-orm.config';
+import { createAdapter } from '../plugins/casbin-mikro-adapter';
 import { join } from 'path';
 import { createWatcher } from '@midwayjs/casbin-redis-adapter';
-
-import { createAdapter, CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
 
 export default (appInfo: MidwayAppInfo) => {
   return {
@@ -32,9 +36,9 @@ export default (appInfo: MidwayAppInfo) => {
           synchronize: true, // 如果第一次使用，不存在表，有同步的需求可以写 true，注意会丢数据
           logging: true,
           // 扫描entity文件夹
-          entities: ['**/entity/*{.ts,.js}', CasbinRule],
+          entities: ['**/entity/*{.ts,.js}'],
           timezone: '+00:00',
-          migrations: ['**/migration/*.ts', CasbinRule],
+          migrations: ['**/migration/*.ts'],
           cli: {
             migrationsDir: 'migration',
           },
@@ -141,8 +145,8 @@ export default (appInfo: MidwayAppInfo) => {
       port: env.MAIL_PORT ? Number(env.MAIL_PORT) : 465,
       secure: true,
       auth: {
-        user: env.MAIL_USER,
-        pass: env.MAIL_PASS,
+        user: env.MAIL_USER || '876809592@qq.com',
+        pass: env.MAIL_PASS || 'wlmztowclouybebc',
       },
     } as MailConfig,
     casbin: {
@@ -154,6 +158,11 @@ export default (appInfo: MidwayAppInfo) => {
         pubClientName: 'node-casbin-official',
         subClientName: 'node-casbin-sub',
       }),
+    },
+    mikro: {
+      dataSource: {
+        default: mikroOrmConfig,
+      },
     },
   };
 };

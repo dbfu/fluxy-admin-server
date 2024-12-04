@@ -1,30 +1,41 @@
-import { Entity, Column } from 'typeorm';
 import { BaseEntity } from '../../../common/base.entity';
 import { omit } from 'lodash';
 import { UserVO } from '../vo/user';
-import { FileEntity } from '../../file/entity/file';
 import { RoleEntity } from '../../role/entity/role';
+import {
+  Collection,
+  Entity,
+  ManyToMany,
+  ManyToOne,
+  Property,
+} from '@mikro-orm/core';
+import { MenuEntity } from '../../menu/entity/menu';
+import { FileEntity } from '../../file/entity/file';
 
-@Entity('sys_user')
+@Entity({ tableName: 'sys_user' })
 export class UserEntity extends BaseEntity {
-  @Column({ comment: '用户名称' })
+  @Property({ comment: '用户名称' })
   userName: string;
-  @Column({ comment: '用户昵称' })
+  @Property({ comment: '用户昵称' })
   nickName: string;
-  @Column({ comment: '手机号' })
+  @Property({ comment: '手机号' })
   phoneNumber: string;
-  @Column({ comment: '邮箱' })
+  @Property({ comment: '邮箱' })
   email: string;
-  @Column({ comment: '性别（0:女，1:男）', nullable: true })
+  @Property({ comment: '性别（0:女，1:男）', nullable: true })
   sex?: number;
-  @Column({ comment: '密码' })
+  @Property({ comment: '密码' })
   password: string;
   toVO(): UserVO {
-    const userVO = omit<UserEntity>(this, ['password', 'avatar']) as UserVO;
-    userVO.avatarPath = this.avatarEntity?.filePath;
+    const userVO = omit<UserEntity>(this.toObject(), ['password']) as UserVO;
+    userVO.avatarPath = this.avatar?.filePath;
     return userVO;
   }
 
-  avatarEntity?: FileEntity;
-  roles: RoleEntity[];
+  @ManyToOne()
+  avatar?: FileEntity;
+
+  @ManyToMany({ entity: () => RoleEntity, mappedBy: 'users' })
+  roles = new Collection<RoleEntity>(this);
+  menus: MenuEntity[];
 }

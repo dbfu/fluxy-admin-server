@@ -16,12 +16,18 @@ import { MenuDTO } from '../dto/menu';
 import { MenuVersionDTO } from '../dto/menu.version';
 import { UpdateMenuVersionDTO } from '../dto/update.menu.version';
 import { MenuService } from '../service/menu';
+import { PageDTO } from '../../../common/page.dto';
 
 @Provide()
 @Controller('/menu', { description: '菜单管理' })
 export class MenuController {
   @Inject()
   menuService: MenuService;
+
+  @Get('/page', { description: '分页查询菜单' })
+  async page(@Query() pageInfo: PageDTO) {
+    return await this.menuService.getMenusByPage(pageInfo, { parentId: null });
+  }
 
   @Post('/', { description: '创建一个菜单' })
   async create(@Body() data: MenuDTO) {
@@ -42,11 +48,6 @@ export class MenuController {
   @Put('/', { description: '更新菜单' })
   async update(@Body() data: MenuDTO) {
     return await this.menuService.editMenu(data);
-  }
-
-  @Get('/page', { description: '分页查询菜单' })
-  async page(@Query('page') page: number, @Query('size') size: number) {
-    return await this.menuService.page(page, size);
   }
 
   @Get('/list', { description: '查询全量菜单' })

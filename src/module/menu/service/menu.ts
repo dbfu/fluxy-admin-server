@@ -3,15 +3,8 @@ import { NodeRedisWatcher } from '@midwayjs/casbin-redis-adapter';
 import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
 import { Inject, Provide } from '@midwayjs/decorator';
 import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
-import {
-  DataSource,
-  FindOptionsOrder,
-  FindOptionsWhere,
-  IsNull,
-  Repository,
-} from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { MinioClient } from '../../../autoload/minio';
-import { R } from '../../../common/base.error.util';
 import { BaseService } from '../../../common/base.service';
 import { RoleMenuEntity } from '../../role/entity/role.menu';
 import { MenuDTO } from '../dto/menu';
@@ -20,6 +13,9 @@ import { UpdateMenuVersionDTO } from '../dto/update.menu.version';
 import { MenuEntity } from '../entity/menu';
 import { MenuApiEntity } from '../entity/menu.api';
 import { MenuVersionEntity } from '../entity/menu.version';
+import { EntityRepository, FilterQuery } from '@mikro-orm/mysql';
+import { PageDTO } from '../../../common/page.dto';
+import { AssertUtils } from '../../../utils/assert';
 
 enum MenuType {
   DIRECTORY = 1,
@@ -49,63 +45,99 @@ export class MenuService extends BaseService<MenuEntity> {
   @Inject()
   minioClient: MinioClient;
 
-  getModel(): Repository<MenuEntity> {
-    return this.menuModel;
+  getModel(): EntityRepository<MenuEntity> {
+    return this.getRepository(MenuEntity);
   }
 
   async createMenu(data: MenuDTO) {
-    if (
-      data.route &&
-      (await this.menuModel.countBy({ route: data.route })) > 0
-    ) {
-      throw R.error('路由不能重复');
-    }
+    AssertUtils.isTrue(!data.route || (await this.repo(MenuEntity).count({ route: data.route })) === 0, '路由不能重复');
+    AssertUtils.isTrue(!data.authCode || (await this.repo(MenuEntity).count({ authCode: data.authCode })) === 0, '权限代码不能重复');
 
-    if (
-      data.authCode &&
-      (await this.menuModel.countBy({ authCode: data.authCode })) > 0
-    ) {
-      throw R.error('权限代码不能重复');
-    }
-    const entity = data.toEntity();
-    const version = new MenuVersionEntity();
+    const menuEntity = this.repo(MenuEntity).create(data);
+    const versionEntity = this.repo(MenuVersionEntity).create({});
 
-    await this.defaultDataSource.transaction(async manager => {
+    return await this.em.transactional(async (em) => {
       // 如果菜单类型为低代码页面，默认版本为v1.0.0
-      if (entity.type === MenuType.LowCodePage) {
-        entity.curVersion = 'v1.0.0';
+      if (menuEntity.type === MenuType.LowCodePage) {
+        menuEntity.curVersion = 'v1.0.0';
       }
 
-      await manager.save(MenuEntity, entity);
+      await em.persistAndFlush(menuEntity);
 
       // 把低代码页面配置信息保存成json文件上传到minio文件服务器
-      if (entity.type === MenuType.LowCodePage && data.pageSetting) {
+      if (menuEntity.type === MenuType.LowCodePage && data.pageSetting) {
         // 初始化版本
-        version.menuId = entity.id;
-        version.version = entity.curVersion;
-        version.description = '初始化';
+        versionEntity.menuId = menuEntity.id;
+        versionEntity.version = menuEntity.curVersion;
+        versionEntity.description = '初始化';
 
-        await manager.save(MenuVersionEntity, version);
+        em.persist(versionEntity);
 
         await this.minioClient.putObject(
           'low-code',
-          `${entity.id}/${entity.curVersion}.json`,
+          `${menuEntity.id}/${menuEntity.curVersion}.json`,
           Buffer.from(data.pageSetting, 'utf-8')
         );
       }
 
-      const menuApis = (data.apis || []).map(api => {
+      (data.apis || []).forEach(api => {
         const menuApi = new MenuApiEntity();
-        menuApi.menuId = entity.id;
+        menuApi.menuId = menuEntity.id;
         menuApi.path = api.path;
         menuApi.method = api.method;
-        return menuApi;
+        em.persist(menuApi);
       });
+      
+      try {
+        await em.flush();
+      } catch {
+        AssertUtils.isTrue(false, '创建失败');
+      }
 
-      await manager.createQueryBuilder().insert().values(menuApis).execute();
-    });
 
-    return { ...entity, version };
+      return { ...menuEntity, version: versionEntity };
+    })
+
+
+
+
+
+    // await this.defaultDataSource.transaction(async manager => {
+    //   // 如果菜单类型为低代码页面，默认版本为v1.0.0
+    //   if (entity.type === MenuType.LowCodePage) {
+    //     entity.curVersion = 'v1.0.0';
+    //   }
+
+    //   await manager.save(MenuEntity, entity);
+
+    //   // 把低代码页面配置信息保存成json文件上传到minio文件服务器
+    //   if (entity.type === MenuType.LowCodePage && data.pageSetting) {
+    //     // 初始化版本
+    //     version.menuId = entity.id;
+    //     version.version = entity.curVersion;
+    //     version.description = '初始化';
+
+    //     await manager.save(MenuVersionEntity, version);
+
+    //     await this.minioClient.putObject(
+    //       'low-code',
+    //       `${entity.id}/${entity.curVersion}.json`,
+    //       Buffer.from(data.pageSetting, 'utf-8')
+    //     );
+    //   }
+
+    //   const menuApis = (data.apis || []).map(api => {
+    //     const menuApi = new MenuApiEntity();
+    //     menuApi.menuId = entity.id;
+    //     menuApi.path = api.path;
+    //     menuApi.method = api.method;
+    //     return menuApi;
+    //   });
+
+    //   await manager.createQueryBuilder().insert().values(menuApis).execute();
+    // });
+
+    // return { ...entity, version };
   }
 
   async editMenu(data: MenuDTO) {
@@ -167,77 +199,55 @@ export class MenuService extends BaseService<MenuEntity> {
     return entity;
   }
 
-  async page(
-    page: number,
-    pageSize: number,
-    where?: FindOptionsWhere<MenuEntity>
-  ) {
-    if (where) {
-      where.parentId = IsNull();
-    } else {
-      where = { parentId: IsNull() };
-    }
-
-    const order: FindOptionsOrder<MenuEntity> = { orderNumber: 'ASC' };
-
-    const [data, total] = await this.menuModel.findAndCount({
-      where,
-      order,
-      skip: page * pageSize,
-      take: pageSize,
+  async getMenusByPage(pageInfo: PageDTO, where: FilterQuery<MenuEntity>) {
+    const [data, total] = await this.repo(MenuEntity).findAndCount(where, {
+      limit: pageInfo.size,
+      offset: pageInfo.page * pageInfo.size,
+      orderBy: { orderNumber: 'ASC' },
     });
 
-    if (!data.length) return { data: [], total: 0 };
+    // const order: FindOptionsOrder<MenuEntity> = { orderNumber: 'ASC' };
+
+    // const [data, total] = await this.menuModel.findAndCount({
+    //   where,
+    //   order,
+    //   skip: page * pageSize,
+    //   take: pageSize,
+    // });
+
+    // if (!data.length) return { data: [], total: 0 };
 
     const ids = data.map((o: MenuEntity) => o.id);
-    const countMap = await this.menuModel
-      .createQueryBuilder('menu')
-      .select('COUNT(menu.parentId)', 'count')
-      .addSelect('menu.parentId', 'id')
-      .where('menu.parentId IN (:...ids)', { ids })
-      .groupBy('menu.parentId')
-      .getRawMany();
-
-    const result = data.map((item: MenuEntity) => {
-      const count =
-        countMap.find((o: { id: string; count: number }) => o.id === item.id)
-          ?.count || 0;
-
-      return {
-        ...item,
-        hasChild: Number(count) > 0,
-      };
+    const menus = await this.repo(MenuEntity).findAll({
+      where: { parentId: { $in: ids } },
     });
+
+    const result = data.map(m => ({
+      ...m.toObject(),
+      hasChild: menus.filter(m2 => m2.parentId === m.id).length > 0,
+    }))
 
     return { data: result, total };
   }
 
   async getChildren(parentId?: string) {
-    if (!parentId) {
-      throw R.validateError('父节点id不能为空');
-    }
-    const data = await this.menuModel.find({
-      where: { parentId: parentId },
-      order: { orderNumber: 'ASC' },
+    AssertUtils.notEmpty(parentId, '父节点id不能为空');
+
+    const data = await this.repo(MenuEntity).findAll({
+      where: { parentId },
+      orderBy: { orderNumber: 'ASC' },
     });
     if (!data.length) return [];
 
-    const ids = data.map((o: any) => o.id);
-    const countMap = await this.menuModel
-      .createQueryBuilder('menu')
-      .select('COUNT(menu.parentId)', 'count')
-      .addSelect('menu.parentId', 'id')
-      .where('menu.parentId IN (:...ids)', { ids })
-      .groupBy('menu.parentId')
-      .getRawMany();
-
-    const result = data.map((item: any) => {
-      const count = countMap.find(o => o.id === item.id)?.count || 0;
-      return {
-        ...item,
-        hasChild: Number(count) > 0,
-      };
+    const ids = data.map((o: MenuEntity) => o.id);
+    const menus = await this.repo(MenuEntity).findAll({
+      where: { parentId: { $in: ids } },
     });
+
+    const result = data.map(m => ({
+      ...m.toObject(),
+      hasChild: menus.filter(m2 => m2.parentId === m.id).length > 0,
+    }))
 
     return result;
   }

@@ -6,6 +6,7 @@ import { FileEntity } from '../entity/file';
 import { UploadFileInfo } from '@midwayjs/upload';
 import { MinioClient } from '../../../autoload/minio';
 import { MinioConfig } from '../../../interface';
+import { EntityRepository } from '@mikro-orm/mysql';
 
 @Provide()
 export class FileService extends BaseService<FileEntity> {
@@ -18,19 +19,21 @@ export class FileService extends BaseService<FileEntity> {
   @InjectDataSource()
   defaultDataSource: DataSource;
 
-  getModel(): Repository<FileEntity> {
-    return this.fileModel;
+  getModel(): EntityRepository<FileEntity> {
+    return this.getRepository(FileEntity);
   }
 
   // 上传方法
   async upload(file: UploadFileInfo<string>) {
     const fileName = `${new Date().getTime()}_${file.filename}`;
 
-    const data = await this.defaultDataSource.transaction(async manager => {
-      const fileEntity = new FileEntity();
-      fileEntity.fileName = fileName;
-      fileEntity.filePath = `/file/${this.minioConfig.bucketName}/${fileName}`;
-      await manager.save(FileEntity, fileEntity);
+    const data = await this.em.transactional(async em => {
+      const fileEntity = em.create(FileEntity, {
+        fileName,
+        filePath: `/file/${this.minioConfig.bucketName}/${fileName}`,
+      });
+
+      em.persist(fileEntity);
 
       await this.minioClient.fPutObject(
         this.minioConfig.bucketName,
@@ -38,15 +41,34 @@ export class FileService extends BaseService<FileEntity> {
         file.data
       );
 
-      return fileEntity;
+      await em.flush();
+
+      return fileEntity.toVO();
     });
 
     return data;
+
+    // const data = await this.defaultDataSource.transaction(async manager => {
+    //   const fileEntity = new FileEntity();
+    //   fileEntity.fileName = fileName;
+    //   fileEntity.filePath = `/file/${this.minioConfig.bucketName}/${fileName}`;
+    //   await manager.save(FileEntity, fileEntity);
+
+    //   await this.minioClient.fPutObject(
+    //     this.minioConfig.bucketName,
+    //     fileName,
+    //     file.data
+    //   );
+
+    //   return fileEntity;
+    // });
+
+    // return data;
   }
 
   // 上传单据时，把单据id注入进去
   async setPKValue(id: string, pkValue: string, pkName: string) {
-    const entity = await this.getById(id);
+    const entity = await this.getRepository(FileEntity).findOne(id);
     if (!entity) return;
     entity.pkValue = pkValue;
     entity.pkName = pkName;

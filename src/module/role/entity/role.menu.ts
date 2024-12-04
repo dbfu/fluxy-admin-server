@@ -1,10 +1,10 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Property } from '@mikro-orm/core';
 import { BaseEntity } from '../../../common/base.entity';
 
-@Entity('sys_role_menu')
+@Entity({ tableName: 'sys_role_menu' })
 export class RoleMenuEntity extends BaseEntity {
-  @Column({ comment: '角色id' })
+  @Property({ comment: '角色id' })
   roleId?: string;
-  @Column({ comment: '菜单id' })
+  @Property({ comment: '菜单id' })
   menuId?: string;
 }

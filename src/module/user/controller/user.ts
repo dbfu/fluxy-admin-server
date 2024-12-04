@@ -12,7 +12,6 @@ import {
 } from '@midwayjs/decorator';
 import { UserDTO } from '../dto/user';
 import { UserService } from '../service/user';
-import { FindOptionsWhere, Like } from 'typeorm';
 import { UserEntity } from '../entity/user';
 import { FileService } from '../../file/service/file';
 import { RuleType, Valid } from '@midwayjs/validate';
@@ -20,6 +19,7 @@ import { R } from '../../../common/base.error.util';
 import { MailService } from '../../../common/mail.service';
 import { generateRandomCode } from '../../../utils/uuid';
 import { RedisService } from '@midwayjs/redis';
+import { FilterParams } from '../../../utils/filter-query';
 
 @Provide()
 @Controller('/user', { description: '用户管理' })
@@ -33,54 +33,49 @@ export class UserController {
   @Inject()
   redisService: RedisService;
 
-  @Post('/', { description: '新建' })
+  @Get('/page', { description: '分页查询用户' })
+  async page(
+    @Query('page') page: number,
+    @Query('size') size: number,
+    @Query('nickName') nickName: string,
+    @Query('phoneNumber') phoneNumber: string,
+    @Query('userName') userName: string
+  ) {
+    const query = new FilterParams<UserEntity>();
+
+    query
+      .append('phoneNumber', { $like: `%${phoneNumber}%` }, !!phoneNumber)
+      .append('userName', { $like: `%${userName}%` }, !!userName)
+      .append('nickName', { $like: `%${nickName}%` }, !!nickName);
+
+    return await this.userService.page(page, size, query.where);
+  }
+
+  @Post('/', { description: '创建用户' })
   async create(@Body() data: UserDTO) {
-    if (!data.emailCaptcha) {
-      throw R.error('邮箱验证码不能为空');
-    }
     return await this.userService.createUser(data);
   }
 
-  @Put('/', { description: '编辑' })
+  @Put('/', { description: '更新用户' })
   async edit(@Body() data: UserDTO) {
-    return await this.userService.editUser(data);
+    return await this.userService.updateUser(data);
   }
 
-  @Del('/:id', { description: '删除' })
+  @Del('/:id', { description: '删除用户' })
   async remove(
     @Valid(RuleType.number().required().error(R.error('id不能为空')))
     @Param('id')
-    id: number
+    id: string
   ) {
     await this.userService.removeUser(id);
   }
 
-  @Get('/:id', { description: '根据id查询' })
+  @Get('/:id', { description: '根据id查询用户' })
   async getById(
     @Param('id')
     id: string
   ) {
     return await this.userService.getById(id);
-  }
-
-  @Get('/page', { description: '分页查询' })
-  async page(
-    @Query('page') page: number,
-    @Query('size') size: number,
-    @Query('nickName') nickName: string,
-    @Query('phoneNumber') phoneNumber: string
-  ) {
-    const query: FindOptionsWhere<UserEntity> = {};
-
-    if (phoneNumber) {
-      query.phoneNumber = Like(`%${phoneNumber}%`);
-    }
-
-    if (nickName) {
-      query.nickName = Like(`%${nickName}%`);
-    }
-
-    return await this.userService.page(page, size, query);
   }
 
   @Post('/send/email/captcha', { description: '发送邮箱验证码' })

@@ -1,17 +1,12 @@
 import { Inject, Provide } from '@midwayjs/decorator';
 import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
 import * as bcrypt from 'bcryptjs';
-import { omit } from 'lodash';
-import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
-import { CasbinEnforcerService } from '@midwayjs/casbin';
 import { NodeRedisWatcher } from '@midwayjs/casbin-redis-adapter';
-import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
 import { RedisService } from '@midwayjs/redis';
-import { R } from '../../../common/base.error.util';
 import { BaseService } from '../../../common/base.service';
 import { MailService } from '../../../common/mail.service';
-import { SocketMessageType } from '../../../socket/message';
 import { SocketService } from '../../../socket/service';
 import { uuid } from '../../../utils/uuid';
 import { FileEntity } from '../../file/entity/file';
@@ -21,11 +16,17 @@ import { UserDTO } from '../dto/user';
 import { UserEntity } from '../entity/user';
 import { UserRoleEntity } from '../entity/user.role';
 import { UserVO } from '../vo/user';
+import { EntityRepository, FilterQuery } from '@mikro-orm/mysql';
+import { CasbinRule } from '../../../plugins/casbin-mikro-adapter/casbinRule';
+import { AssertUtils } from '../../../utils/assert';
+import { InjectRepository } from '@midwayjs/mikro';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
-  @InjectEntityModel(UserEntity)
-  userModel: Repository<UserEntity>;
+  @InjectRepository(UserEntity)
+  userModel: EntityRepository<UserEntity>;
+  @InjectRepository(RoleEntity)
+  roleModel: EntityRepository<RoleEntity>;
   @InjectEntityModel(FileEntity)
   fileModel: Repository<FileEntity>;
   @Inject()
@@ -40,276 +41,179 @@ export class UserService extends BaseService<UserEntity> {
   userRoleModel: Repository<UserRoleEntity>;
   @Inject()
   socketService: SocketService;
-  @Inject()
-  casbinEnforcerService: CasbinEnforcerService;
+
   @Inject()
   casbinWatcher: NodeRedisWatcher;
 
-  getModel(): Repository<UserEntity> {
-    return this.userModel;
+  getModel(): EntityRepository<UserEntity> {
+    return this.getRepository(UserEntity);
   }
 
   async createUser(userDTO: UserDTO) {
     const entity = userDTO.toEntity();
     const { userName, phoneNumber, email } = userDTO;
 
-    let isExist = (await this.userModel.countBy({ userName })) > 0;
+    let isExist = (await this.userModel.count({ userName })) > 0;
+    AssertUtils.isTrue(!isExist, '当前用户名已存在');
 
-    if (isExist) {
-      throw R.error('当前用户名已存在');
-    }
+    isExist = (await this.userModel.count({ phoneNumber })) > 0;
+    AssertUtils.isTrue(!isExist, '当前手机号已存在');
 
-    isExist = (await this.userModel.countBy({ phoneNumber })) > 0;
-
-    if (isExist) {
-      throw R.error('当前手机号已存在');
-    }
-
-    isExist = (await this.userModel.countBy({ email })) > 0;
-
-    if (isExist) {
-      throw R.error('当前邮箱已存在');
-    }
-
-    const emailCaptcha = await this.redisService.get(`emailCaptcha:${email}`);
-
-    if (emailCaptcha !== userDTO.emailCaptcha) {
-      throw R.error('邮箱验证码错误或已生效');
-    }
+    isExist = (await this.userModel.count({ email })) > 0;
+    AssertUtils.isTrue(!isExist, '当前邮箱已存在');
 
     // 随机生成密码，并发送到对应的邮箱中。
     const password = uuid();
-
     // 添加用户，对密码进行加盐加密
     const hashPassword = bcrypt.hashSync(password, 10);
-
     entity.password = hashPassword;
 
-    // 使用事物
-    await this.defaultDataSource.transaction(async manager => {
-      await manager.save(UserEntity, entity);
+    return await this.em.transactional(async em => {
+      const user = em.create(UserEntity, entity);
+
+      const roles = await this.roleModel.findAll({
+        where: { id: { $in: userDTO.roleIds } },
+      });
+
+      roles.forEach(role => {
+        user.roles.add(role);
+      });
+
+      em.persist(user);
 
       if (userDTO.avatar) {
-        await manager
-          .createQueryBuilder()
-          .update(FileEntity)
-          .set({
-            pkValue: entity.id,
+        em.createQueryBuilder(FileEntity)
+          .update({
+            pkValue: user.id,
             pkName: 'user_avatar',
           })
-          .where('id = :id', { id: userDTO.avatar })
+          .andWhere({ id: userDTO.avatar })
           .execute();
       }
-
-      await manager.save(
-        UserRoleEntity,
-        userDTO.roleIds.map(roleId => {
-          const userRole = new UserRoleEntity();
-          userRole.roleId = roleId;
-          userRole.userId = entity.id;
-          return userRole;
-        })
-      );
 
       // 构造策略对象
-      const casbinRules = userDTO.roleIds.map(roleId => {
+      userDTO.roleIds.forEach(roleId => {
         const casbinRule = new CasbinRule();
         casbinRule.ptype = 'g';
         casbinRule.v0 = userDTO.id;
         casbinRule.v1 = roleId;
-        return casbinRule;
+        em.persist(casbinRule);
       });
 
-      // 保存策略
-      await manager
-        .createQueryBuilder()
-        .insert()
-        .into(CasbinRule)
-        .values(casbinRules)
-        .execute();
+      // await this.mailService.sendMail({
+      //   to: email,
+      //   subject: 'fluxy-admin平台账号创建成功',
+      //   html: `<div>
+      //   <p><span style="color:#5867dd;">${userDTO.nickName}</span>，你的账号已开通成功</p>
+      //   <p>登录地址：<a href="https://fluxyadmin.cn/user/login">https://fluxyadmin.cn/user/login</a></p>
+      //   <p>登录账号：${userDTO.email}</p>
+      //   <p>登录密码：${password}</p>
+      //   </div>`,
+      // });
 
-      this.mailService.sendMail({
-        to: email,
-        subject: 'fluxy-admin平台账号创建成功',
-        html: `<div>
-        <p><span style="color:#5867dd;">${userDTO.nickName}</span>，你的账号已开通成功</p>
-        <p>登录地址：<a href="https://fluxyadmin.cn/user/login">https://fluxyadmin.cn/user/login</a></p>
-        <p>登录账号：${userDTO.email}</p>
-        <p>登录密码：${password}</p>
-        </div>`,
+      await em.flush();
+
+      // 发消息给其它进程，同步最新的策略
+      await this.casbinWatcher.publishData();
+
+      // 把entity中的password移除返回给前端
+      return user.toVO();
+    });
+  }
+
+  /**
+   * 编辑用户信息
+   *
+   * @param userDTO 用户DTO对象
+   * @returns 返回更新后的用户信息
+   */
+  async updateUser(userDTO: UserDTO): Promise<UserVO> {
+    const { userName, phoneNumber, email, id, nickName, sex } = userDTO;
+
+    const user = await this.repo(UserEntity).findOne({ id });
+
+    AssertUtils.notEmpty(user, '当前用户不存在');
+
+    let isExist =
+      (await this.repo(UserEntity).count({
+        userName,
+        id: { $ne: id },
+      })) > 0;
+
+    AssertUtils.isTrue(!isExist, '当前用户名已存在');
+
+    isExist =
+      (await this.repo(UserEntity).count({
+        phoneNumber,
+        id: { $ne: id },
+      })) > 0;
+
+    AssertUtils.isTrue(!isExist, '当前手机号已存在');
+
+    isExist =
+      (await this.repo(UserEntity).count({
+        email,
+        id: { $ne: id },
+      })) > 0;
+
+    AssertUtils.isTrue(!isExist, '当前邮箱已存在');
+
+    const data = await this.em.transactional(async em => {
+      const casbinRules = await this.repo(CasbinRule).findAll({
+        where: { v0: userDTO.id, ptype: 'g' },
       });
+
+      em.remove(casbinRules);
+
+      userDTO.roleIds.forEach(roleId => {
+        const casbinRule = new CasbinRule();
+        casbinRule.ptype = 'g';
+        casbinRule.v0 = userDTO.id;
+        casbinRule.v1 = roleId;
+        em.persist(casbinRule);
+      });
+
+      const roles = await this.repo(RoleEntity).findAll({
+        where: { id: { $in: userDTO.roleIds } },
+      });
+
+      user.nickName = nickName;
+      user.phoneNumber = phoneNumber;
+      user.sex = sex;
+      user.avatar = em.getReference(FileEntity, userDTO.avatar);
+
+      user.roles.removeAll();
+      roles.forEach(role => {
+        user.roles.add(role);
+      });
+
+      await em.flush();
+
+      return user.toVO();
     });
 
     // 发消息给其它进程，同步最新的策略
     await this.casbinWatcher.publishData();
 
-    // 把entity中的password移除返回给前端
-    return omit(entity, ['password']) as UserVO;
+    return data;
   }
 
-  async editUser(userDTO: UserDTO): Promise<void | UserVO> {
-    const { userName, phoneNumber, email, id, nickName, sex, avatar } = userDTO;
-    let user = await this.userModel.findOneBy({ userName });
-
-    if (user && user.id !== id) {
-      throw R.error('当前用户名已存在');
-    }
-
-    user = await this.userModel.findOneBy({ phoneNumber });
-
-    if (user && user.id !== id) {
-      throw R.error('当前手机号已存在');
-    }
-
-    user = await this.userModel.findOneBy({ email });
-
-    if (user && user.id !== id) {
-      throw R.error('当前邮箱已存在');
-    }
-
-    const userRolesMap = await this.userRoleModel.findBy({
-      userId: userDTO.id,
-    });
-
-    await this.defaultDataSource.transaction(async manager => {
-      const casbinRules = userDTO.roleIds.map(roleId => {
-        const casbinRule = new CasbinRule();
-        casbinRule.ptype = 'g';
-        casbinRule.v0 = userDTO.id;
-        casbinRule.v1 = roleId;
-        return casbinRule;
-      });
-
-      Promise.all([
-        manager
-          .createQueryBuilder()
-          .update(UserEntity)
-          .set({
-            nickName,
-            phoneNumber,
-            sex,
-          })
-          .where('id = :id', { id: userDTO.id })
-          .execute(),
-        manager.remove(UserRoleEntity, userRolesMap),
-        manager.save(
-          UserRoleEntity,
-          userDTO.roleIds.map(roleId => {
-            const userRole = new UserRoleEntity();
-            userRole.roleId = roleId;
-            userRole.userId = userDTO.id;
-            return userRole;
-          })
-        ),
-        await manager
-          .createQueryBuilder()
-          .delete()
-          .from(CasbinRule)
-          .where({ ptype: 'g', v0: userDTO.id })
-          .execute(),
-        await manager
-          .createQueryBuilder()
-          .insert()
-          .into(CasbinRule)
-          .values(casbinRules)
-          .execute(),
-      ]);
-
-      // 根据当前用户id在文件表里查询
-      const fileRecord = await this.fileModel.findOneBy({
-        pkValue: id,
-        pkName: 'user_avatar',
-      });
-
-      // 如果查到文件，并且当前头像是空的，只需要给原来的文件给删除就行了。
-      if (fileRecord && !avatar) {
-        await this.fileModel.remove(fileRecord);
-      } else if (fileRecord && avatar && fileRecord.id !== avatar) {
-        // 如果查到文件，并且有当前头像，并且原来的文件id不等于当前传过来的文件id
-        // 删除原来的文件
-        // 把当前的用户id更新到新文件行数据中
-        await Promise.all([
-          manager.delete(FileEntity, fileRecord.id),
-          manager
-            .createQueryBuilder()
-            .update(FileEntity)
-            .set({
-              pkValue: id,
-              pkName: 'user_avatar',
-            })
-            .where('id = :id', { id: userDTO.avatar })
-            .execute(),
-        ]);
-      } else if (!fileRecord && avatar) {
-        // 如果以前没有文件，现在有文件，直接更新就行了
-        manager
-          .createQueryBuilder()
-          .update(FileEntity)
-          .set({
-            pkValue: id,
-            pkName: 'user_avatar',
-          })
-          .where('id = :id', { id: userDTO.avatar })
-          .execute();
-      }
-
-      // 检测当前用户分配的角色有没有变化，如果有变化，发通知给前端
-      const oldRoleIds = userRolesMap.map(role => role.roleId);
-      // 先判断两个数量是不是一样的
-      if (oldRoleIds.length !== userDTO.roleIds.length) {
-        this.socketService.sendMessage(userDTO.id, {
-          type: SocketMessageType.PermissionChange,
-        });
-      } else {
-        // 因为数组都是数字，所以先排序，排序之后把数组转换为字符串比较，写法比较简单
-        const sortOldRoleIds = oldRoleIds.sort();
-        const sortRoleIds = userDTO.roleIds.sort();
-
-        if (sortOldRoleIds.join() !== sortRoleIds.join()) {
-          this.socketService.sendMessage(userDTO.id, {
-            type: SocketMessageType.PermissionChange,
-          });
-        }
-      }
-    });
-
-    // 发消息给其它进程，同步最新的策略
-    await this.casbinWatcher.publishData();
-
-    const entity = this.userModel.findOneBy({ id });
-    return omit(entity, ['password']) as UserVO;
-  }
-
-  async removeUser(id: number) {
-    await this.defaultDataSource.transaction(async manager => {
+  async removeUser(id: string) {
+    await this.em.transactional(async () => {
       const tokens = await this.redisService.smembers(`userToken_${id}`);
       const refreshTokens = await this.redisService.smembers(
         `userRefreshToken_${id}`
       );
 
       await Promise.all([
-        manager
+        this.userModel.createQueryBuilder().delete().where({ id }).execute(),
+        this.repo(FileEntity)
           .createQueryBuilder()
           .delete()
-          .from(UserEntity)
-          .where('id = :id', { id })
-          .execute(),
-        manager
-          .createQueryBuilder()
-          .delete()
-          .from(FileEntity)
-          .where('pkValue = :pkValue', { pkValue: id })
-          .andWhere('pkName = "user_avatar"')
-          .execute(),
-        ...tokens.map(token => this.redisService.del(`token:${token}`)),
-        ...refreshTokens.map(refreshToken =>
-          this.redisService.del(`refreshToken:${refreshToken}`)
-        ),
-        manager
-          .createQueryBuilder()
-          .delete()
-          .from(CasbinRule)
-          .where({ ptype: 'g', v0: id })
+          .where({
+            pkValue: id,
+            pkName: 'user_avatar',
+          })
           .execute(),
         ...tokens.map(token => this.redisService.del(`token:${token}`)),
         ...refreshTokens.map(refreshToken =>
@@ -321,27 +225,13 @@ export class UserService extends BaseService<UserEntity> {
     await this.casbinWatcher.publishData();
   }
 
-  async page<T>(page = 0, pageSize = 10, where?: FindOptionsWhere<T>) {
-    const [data, total] = await this.userModel
-      .createQueryBuilder('t')
-      .leftJoinAndSelect(UserRoleEntity, 'user_role', 't.id = user_role.userId')
-      .leftJoinAndMapMany(
-        't.roles',
-        RoleEntity,
-        'role',
-        'role.id = user_role.roleId'
-      )
-      .leftJoinAndMapOne(
-        't.avatarEntity',
-        FileEntity,
-        'file',
-        'file.pkValue = t.id and file.pkName = "user_avatar"'
-      )
-      .where(where)
-      .skip(page * pageSize)
-      .take(pageSize)
-      .orderBy('t.createDate', 'DESC')
-      .getManyAndCount();
+  async page(page = 0, pageSize = 10, where?: FilterQuery<UserEntity>) {
+    const [data, total] = await this.userModel.findAndCount(where, {
+      orderBy: { createDate: 'DESC' },
+      limit: pageSize,
+      offset: page * pageSize,
+      populate: ['roles', 'avatar'],
+    });
 
     return {
       data: data.map(entity => entity.toVO()),
@@ -349,24 +239,28 @@ export class UserService extends BaseService<UserEntity> {
     };
   }
 
-  async getByEmail(email: string) {
-    return await this.userModel.findOneBy({ email });
+  async getByEmail() {
+    // return await this.userModel.findOneBy({ email });
+    return null;
   }
 
   async getRoleIdsByUserId(userId: string) {
-    const query = this.userModel.createQueryBuilder('t');
+    console.log(userId);
+    // const query = this.userModel.createQueryBuilder('t');
 
-    const user = (await query
-      .where('t.id = :id', { id: userId })
-      .leftJoinAndSelect(UserRoleEntity, 'userRole', 't.id = userRole.userId')
-      .leftJoinAndMapMany(
-        't.roles',
-        RoleEntity,
-        'role',
-        'role.id = userRole.roleId'
-      )
-      .getOne()) as unknown as UserVO;
+    // const user = (await query
+    //   .where('t.id = :id', { id: userId })
+    //   .leftJoinAndSelect(UserRoleEntity, 'userRole', 't.id = userRole.userId')
+    //   .leftJoinAndMapMany(
+    //     't.roles',
+    //     RoleEntity,
+    //     'role',
+    //     'role.id = userRole.roleId'
+    //   )
+    //   .getOne()) as unknown as any;
 
-    return user?.roles?.map(o => o.id) || [];
+    // return user?.roles?.map(o => o.id) || [];
+
+    return [];
   }
 }

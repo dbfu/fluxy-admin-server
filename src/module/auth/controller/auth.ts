@@ -18,13 +18,13 @@ import { CaptchaService } from '../service/captcha';
 import { R } from '../../../common/base.error.util';
 import { UserService } from '../../user/service/user';
 import { NotLogin } from '../../../decorator/not.login';
-import { UserVO } from '../../user/vo/user';
 import { RefreshTokenDTO } from '../dto/refresh.token';
 import { uuid } from '../../../utils/uuid';
 import { MailService } from '../../../common/mail.service';
 import { ResetPasswordDTO } from '../dto/reset.password';
 import { RSAService } from '../../../common/rsa.service';
 import { NotAuth } from '../../../decorator/not.auth';
+import { UserVO } from '../../user/vo/user';
 @Provide()
 @Controller('/auth', { description: '权限管理' })
 export class AuthController {
@@ -51,10 +51,6 @@ export class AuthController {
       loginDTO.publicKey,
       loginDTO.password
     );
-
-    if (!password) {
-      throw R.error('登录出现异常，请重新登录');
-    }
 
     loginDTO.password = password;
 
@@ -93,25 +89,25 @@ export class AuthController {
 
   @Get('/current/user')
   @NotAuth()
-  async getCurrentUser(): Promise<UserVO> {
+  @ApiResponse({ type: UserVO })
+  async getCurrentUser(): Promise<any> {
     return await this.authService.getUserById(this.ctx.userInfo.userId);
   }
 
   @Post('/logout')
   @NotAuth()
   async logout(): Promise<boolean> {
-    // 清除token和refreshToken
-    const res = await this.redisService
-      .multi()
-      .del(`token:${this.ctx.token}`)
-      .del(`refreshToken:${this.ctx.userInfo.refreshToken}`)
-      .exec();
-
-    if (res.some(item => item[0])) {
+    try {
+      // 清除token和refreshToken
+      await this.redisService
+        .multi()
+        .del(`token:${this.ctx.token}`)
+        .del(`refreshToken:${this.ctx.userInfo.refreshToken}`)
+        .exec();
+      return true;
+    } catch {
       throw R.error('退出登录失败');
     }
-
-    return true;
   }
 
   @NotLogin()
@@ -122,7 +118,7 @@ export class AuthController {
       throw R.error('邮箱不能为空');
     }
 
-    if (!(await this.userService.getByEmail(emailInfo.email))) {
+    if (!(await this.userService.getByEmail())) {
       throw R.error('系统中不存在当前邮箱');
     }
 

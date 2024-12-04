@@ -46,8 +46,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
             o.url === routeInfo.url
         )
       ) {
-        await next();
-        return;
+        return next();
       }
 
       const token = ctx.header.authorization?.replace('Bearer ', '');
@@ -77,13 +76,18 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
         return;
       }
 
+      // 超级管理员不需要鉴权
+      if (ctx.userInfo.userId === '1') {
+        return next();
+      }
+
       const matched = await this.casbinEnforcerService.enforce(
         ctx.userInfo.userId,
         getUrlExcludeGlobalPrefix(this.globalPrefix, routeInfo.fullUrl),
         routeInfo.requestMethod
       );
 
-      if (!matched && ctx.userInfo.userId !== '1') {
+      if (!matched) {
         throw R.forbiddenError('你没有访问该资源的权限');
       }
 

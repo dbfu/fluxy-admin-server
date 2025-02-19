@@ -1,33 +1,33 @@
-import { Configuration, App, Inject } from '@midwayjs/core';
-import * as koa from '@midwayjs/koa';
-import * as validate from '@midwayjs/validate';
+import * as bull from '@midwayjs/bull';
+import * as cache from '@midwayjs/cache';
+import { App, Configuration, Inject } from '@midwayjs/core';
 import * as info from '@midwayjs/info';
-import { join } from 'path';
-import * as orm from '@midwayjs/typeorm';
+import * as koa from '@midwayjs/koa';
 import * as redis from '@midwayjs/redis';
 import * as swagger from '@midwayjs/swagger';
-import * as i18n from '@midwayjs/i18n';
-import * as cache from '@midwayjs/cache';
+import * as orm from '@midwayjs/typeorm';
 import * as upload from '@midwayjs/upload';
-import * as bull from '@midwayjs/bull';
+import * as validate from '@midwayjs/validate';
+import { join } from 'path';
 // import { DefaultErrorFilter } from './filter/default.filter';
-import { NotFoundFilter } from './filter/notfound.filter';
-import { AuthMiddleware } from './middleware/auth';
-import { ValidateErrorFilter } from './filter/validate.filter';
-import { CommonErrorFilter } from './filter/common.filter';
-import { UnauthorizedErrorFilter } from './filter/unauthorized.filter';
-import { DefaultErrorFilter } from './filter/default.filter';
-import * as dotenv from 'dotenv';
-import * as ws from '@midwayjs/ws';
-import { CasbinEnforcerService } from '@midwayjs/casbin';
 import * as casbin from '@midwayjs/casbin';
+import { CasbinEnforcerService } from '@midwayjs/casbin';
+import * as ws from '@midwayjs/ws';
+import * as dotenv from 'dotenv';
+import { CommonErrorFilter } from './filter/common-filter';
+import { DefaultErrorFilter } from './filter/default-filter';
+import { ForbiddenErrorFilter } from './filter/forbidden-filter';
+import { NotFoundFilter } from './filter/notfound-filter';
+import { UnauthorizedErrorFilter } from './filter/unauthorized-filter';
+import { ValidateErrorFilter } from './filter/validate-filter';
+import { AuthMiddleware } from './middleware/auth';
+import { ReportMiddleware } from './middleware/report';
 
 dotenv.config();
 
 @Configuration({
   imports: [
     koa,
-    i18n,
     validate,
     orm,
     redis,
@@ -52,12 +52,15 @@ export class ContainerLifeCycle {
   app: koa.Application;
   @Inject()
   casbinEnforcerService: CasbinEnforcerService;
+  @Inject()
+  bullFramework: bull.Framework;
 
   async onReady() {
     // add middleware
-    this.app.useMiddleware([AuthMiddleware]);
+    this.app.useMiddleware([ReportMiddleware, AuthMiddleware]);
     // add filter
     this.app.useFilter([
+      ForbiddenErrorFilter,
       ValidateErrorFilter,
       CommonErrorFilter,
       NotFoundFilter,
@@ -66,5 +69,11 @@ export class ContainerLifeCycle {
     ]);
 
     this.casbinEnforcerService.enableAutoSave(false);
+
+    this.bullFramework.createQueue('init-database', {
+      defaultJobOptions: {
+        repeat: { cron: '0 */2 * * * *' },
+      },
+    });
   }
 }

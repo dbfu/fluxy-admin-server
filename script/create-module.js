@@ -12,16 +12,22 @@ function firstCharToUpperCase(str) {
 
 const moduleName = process.argv.pop();
 
-if (!fs.existsSync(path.resolve(__dirname, '../src/module'))) {
-  fs.mkdirSync(path.resolve(__dirname, '../src/module'));
+if (!fs.existsSync(path.resolve(__dirname, '../src/module/system'))) {
+  fs.mkdirSync(path.resolve(__dirname, '../src/module/system'));
 }
 
-fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}`));
-fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/controller`));
-fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/service`));
-fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/entity`));
-fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/dto`));
-fs.mkdirSync(path.resolve(__dirname, `../src/module/${moduleName}/vo`));
+fs.mkdirSync(path.resolve(__dirname, `../src/module/system/${moduleName}`));
+fs.mkdirSync(
+  path.resolve(__dirname, `../src/module/system/${moduleName}/controller`)
+);
+fs.mkdirSync(
+  path.resolve(__dirname, `../src/module/system/${moduleName}/service`)
+);
+fs.mkdirSync(
+  path.resolve(__dirname, `../src/module/system/${moduleName}/entity`)
+);
+fs.mkdirSync(path.resolve(__dirname, `../src/module/system/${moduleName}/dto`));
+fs.mkdirSync(path.resolve(__dirname, `../src/module/system/${moduleName}/vo`));
 
 let controllerContent = fs
   .readFileSync(path.resolve(__dirname, './template/controller.template'))
@@ -98,7 +104,7 @@ voContent = voContent
 fs.writeFileSync(
   path.resolve(
     __dirname,
-    `../src/module/${moduleName}/controller/${moduleName}.ts`
+    `../src/module/system/${moduleName}/controller/${moduleName}.ts`
   ),
   controllerContent
 );
@@ -106,7 +112,7 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.resolve(
     __dirname,
-    `../src/module/${moduleName}/service/${moduleName}.ts`
+    `../src/module/system/${moduleName}/service/${moduleName}.ts`
   ),
   serviceContent
 );
@@ -114,17 +120,23 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.resolve(
     __dirname,
-    `../src/module/${moduleName}/entity/${moduleName}.ts`
+    `../src/module/system/${moduleName}/entity/${moduleName}.ts`
   ),
   entityContent
 );
 
 fs.writeFileSync(
-  path.resolve(__dirname, `../src/module/${moduleName}/dto/${moduleName}.ts`),
+  path.resolve(
+    __dirname,
+    `../src/module/system/${moduleName}/dto/${moduleName}.ts`
+  ),
   dtoContent
 );
 
 fs.writeFileSync(
-  path.resolve(__dirname, `../src/module/${moduleName}/vo/${moduleName}.ts`),
+  path.resolve(
+    __dirname,
+    `../src/module/system/${moduleName}/vo/${moduleName}.ts`
+  ),
   voContent
 );

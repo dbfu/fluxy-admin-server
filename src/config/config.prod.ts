@@ -2,11 +2,10 @@ import { MidwayConfig } from '@midwayjs/core';
 import * as redisStore from 'cache-manager-ioredis';
 import { env } from 'process';
 
-import { TokenConfig } from '../interface/token.config';
-import { MailConfig, MinioConfig } from '../interface';
+import { MailConfig, MinioConfig, TokenConfig } from '../interface';
 
-import typeormConfig from './typeorm.prod';
 import { EverythingSubscriber } from '../typeorm-event-subscriber';
+import typeormConfig from './typeorm.prod';
 
 export default {
   // use for cookie sign key, should change to your own and keep security
@@ -23,13 +22,6 @@ export default {
       password: env.REDIS_PASSWORD || '',
       db: 0,
     },
-  },
-  i18n: {
-    localeTable: {
-      en_US: require('../locales/en_US'),
-      zh_CN: require('../locales/zh_CN'),
-    },
-    defaultLocale: 'zh_CN',
   },
   validate: {
     validationOptions: {

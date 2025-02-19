@@ -1,13 +1,12 @@
-import { MidwayAppInfo } from '@midwayjs/core';
-import * as redisStore from 'cache-manager-ioredis';
-import { TokenConfig } from '../interface/token.config';
-import { env } from 'process';
-import { MailConfig, MinioConfig } from '../interface';
-import { EverythingSubscriber } from '../typeorm-event-subscriber';
-import { join } from 'path';
 import { createWatcher } from '@midwayjs/casbin-redis-adapter';
+import { MidwayAppInfo, RouterOption } from '@midwayjs/core';
+import * as redisStore from 'cache-manager-ioredis';
+import { join } from 'path';
+import { env } from 'process';
+import { MailConfig, MinioConfig, TokenConfig } from '../interface';
+import { EverythingSubscriber } from '../typeorm-event-subscriber';
 
-import { createAdapter, CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
+import { CasbinRule, createAdapter } from '@midwayjs/casbin-typeorm-adapter';
 
 export default (appInfo: MidwayAppInfo) => {
   return {
@@ -39,6 +38,7 @@ export default (appInfo: MidwayAppInfo) => {
             migrationsDir: 'migration',
           },
           subscribers: [EverythingSubscriber],
+          maxQueryExecutionTime: 10,
         },
       },
     },
@@ -75,14 +75,6 @@ export default (appInfo: MidwayAppInfo) => {
           db: 3,
         },
       },
-    },
-    i18n: {
-      // 把你的翻译文本放到这里
-      localeTable: {
-        en_US: require('../locales/en_US'),
-        zh_CN: require('../locales/zh_CN'),
-      },
-      defaultLocale: 'zh_CN',
     },
     validate: {
       validationOptions: {
@@ -137,11 +129,11 @@ export default (appInfo: MidwayAppInfo) => {
       },
     },
     mail: {
-      host: env.MAIL_HOST || 'smtp.qq.com',
+      host: env.MAIL_HOST || 'smtp.163.com',
       port: env.MAIL_PORT ? Number(env.MAIL_PORT) : 465,
       secure: true,
       auth: {
-        user: env.MAIL_USER,
+        user: env.MAIL_USER || '18256485741@163.com',
         pass: env.MAIL_PASS,
       },
     } as MailConfig,
@@ -155,5 +147,13 @@ export default (appInfo: MidwayAppInfo) => {
         subClientName: 'node-casbin-sub',
       }),
     },
+    swagger: {
+      documentOptions: {
+        operationIdFactory(controllerKey: string, webRouter: RouterOption) {
+          return `${webRouter.method}`;
+        },
+      },
+    },
+    resetPasswordCallbackUrl: 'http://localhost:5173',
   };
 };

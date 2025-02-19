@@ -1,7 +1,7 @@
+import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
 import { EventSubscriberModel } from '@midwayjs/typeorm';
 import { EntitySubscriberInterface, InsertEvent } from 'typeorm';
-import { snowFlake } from './utils/snow.flake';
-import { CasbinRule } from '@midwayjs/casbin-typeorm-adapter';
+import { snowFlake } from './utils/snow-flake';
 
 @EventSubscriberModel()
 export class EverythingSubscriber implements EntitySubscriberInterface {

@@ -9,6 +9,7 @@ declare module '@midwayjs/core' {
   interface Context {
     userInfo: UserContext;
     token: string;
+    requestStartTime: Date;
   }
 }
 
@@ -36,4 +37,9 @@ export interface MailConfig {
     user: string;
     pass: string;
   };
+}
+
+export interface TokenConfig {
+  expire: number;
+  refreshExpire: number;
 }

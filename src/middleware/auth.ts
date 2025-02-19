@@ -1,15 +1,15 @@
-import {
-  Middleware,
-  IMiddleware,
-  Inject,
-  MidwayWebRouterService,
-  RouterInfo,
-  Config,
-} from '@midwayjs/core';
-import { NextFunction, Context } from '@midwayjs/koa';
-import { R } from '../common/base.error.util';
-import { RedisService } from '@midwayjs/redis';
 import { CasbinEnforcerService } from '@midwayjs/casbin';
+import {
+    Config,
+    IMiddleware,
+    Inject,
+    Middleware,
+    MidwayWebRouterService,
+    RouterInfo,
+} from '@midwayjs/core';
+import { Context, NextFunction } from '@midwayjs/koa';
+import { RedisService } from '@midwayjs/redis';
+import { R } from '../common/base-error-util';
 import { getUrlExcludeGlobalPrefix } from '../utils/utils';
 
 @Middleware()
@@ -42,6 +42,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
       if (
         this.notLoginRouters.some(
           o =>
+            o.prefix === routeInfo.prefix &&
             o.requestMethod === routeInfo.requestMethod &&
             o.url === routeInfo.url
         )

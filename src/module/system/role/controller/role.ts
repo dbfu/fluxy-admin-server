@@ -20,7 +20,7 @@ import { RoleEntity } from '../entity/role';
 import { RoleService } from '../service/role';
 import { RolePageVO } from '../vo/role-page';
 
-@Controller('/role', { description: '角色管理', tagName: 'sys' })
+@Controller('/role', { description: '角色管理' })
 export class RoleController {
   @Inject()
   roleService: RoleService;

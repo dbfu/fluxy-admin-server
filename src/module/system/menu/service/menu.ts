@@ -166,7 +166,7 @@ export class MenuService extends BaseService<MenuEntity> {
         return menuApi;
       });
 
-      await manager.createQueryBuilder().insert().values(menuApis).execute();
+      await manager.save(MenuApiEntity, menuApis);
     });
   }
 
@@ -213,18 +213,19 @@ export class MenuService extends BaseService<MenuEntity> {
       const casbinRules = roleMenus.reduce((prev, cur) => {
         prev.push(
           ...data.apis.map(api => {
-            return this.casbinEnforcerService.addPermissionForUser(
-              entity.id,
-              api.path,
-              api.method,
-              cur.menuId
-            );
+            const casbinRule = new CasbinRule();
+            casbinRule.ptype = 'p';
+            casbinRule.v0 = cur.roleId;
+            casbinRule.v1 = api.path;
+            casbinRule.v2 = api.method;
+            casbinRule.v3 = cur.menuId;
+            return casbinRule;
           })
         );
         return prev;
       }, []);
 
-      await Promise.all(casbinRules);
+      await manager.save(CasbinRule, casbinRules);
     });
 
     await this.casbinWatcher.publishData();

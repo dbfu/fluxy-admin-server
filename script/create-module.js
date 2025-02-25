@@ -1,33 +1,48 @@
 const fs = require('fs');
 const path = require('path');
 
-if (process.argv.length > 3) {
-  console.log('只能有一个参数');
-  process.exit();
-}
-
 function firstCharToUpperCase(str) {
   return str[0].toUpperCase() + str.substring(1);
 }
 
-const moduleName = process.argv.pop();
+const [dir, moduleName, shortName, desc] = process.argv.slice(2, 6);
 
-if (!fs.existsSync(path.resolve(__dirname, '../src/module/system'))) {
-  fs.mkdirSync(path.resolve(__dirname, '../src/module/system'));
+if (!dir) {
+  console.log('请输入文件夹名称');
+  process.exit();
 }
 
-fs.mkdirSync(path.resolve(__dirname, `../src/module/system/${moduleName}`));
+if (!moduleName) {
+  console.log('请输入模块名称');
+  process.exit();
+}
+
+if (!shortName) {
+  console.log('请输入表名前缀');
+  process.exit();
+}
+
+if (!desc) {
+  console.log('请输入模块描述');
+  process.exit();
+}
+
+if (!fs.existsSync(path.resolve(__dirname, `../src/module/${dir}`))) {
+  fs.mkdirSync(path.resolve(__dirname, `../src/module/${dir}`));
+}
+
+fs.mkdirSync(path.resolve(__dirname, `../src/module/${dir}/${moduleName}`));
 fs.mkdirSync(
-  path.resolve(__dirname, `../src/module/system/${moduleName}/controller`)
+  path.resolve(__dirname, `../src/module/${dir}/${moduleName}/controller`)
 );
 fs.mkdirSync(
-  path.resolve(__dirname, `../src/module/system/${moduleName}/service`)
+  path.resolve(__dirname, `../src/module/${dir}/${moduleName}/service`)
 );
 fs.mkdirSync(
-  path.resolve(__dirname, `../src/module/system/${moduleName}/entity`)
+  path.resolve(__dirname, `../src/module/${dir}/${moduleName}/entity`)
 );
-fs.mkdirSync(path.resolve(__dirname, `../src/module/system/${moduleName}/dto`));
-fs.mkdirSync(path.resolve(__dirname, `../src/module/system/${moduleName}/vo`));
+fs.mkdirSync(path.resolve(__dirname, `../src/module/${dir}/${moduleName}/dto`));
+fs.mkdirSync(path.resolve(__dirname, `../src/module/${dir}/${moduleName}/vo`));
 
 let controllerContent = fs
   .readFileSync(path.resolve(__dirname, './template/controller.template'))
@@ -45,8 +60,16 @@ let dtoContent = fs
   .readFileSync(path.resolve(__dirname, './template/dto.template'))
   .toString();
 
+let pageDtoContent = fs
+  .readFileSync(path.resolve(__dirname, './template/page-dto.template'))
+  .toString();
+
 let voContent = fs
   .readFileSync(path.resolve(__dirname, './template/vo.template'))
+  .toString();
+
+let pageVoContent = fs
+  .readFileSync(path.resolve(__dirname, './template/page-vo.template'))
   .toString();
 
 let name;
@@ -78,7 +101,8 @@ controllerContent = controllerContent
   .replace(/\$1/g, name)
   .replace(/\$2/g, filename)
   .replace(/\$3/g, varName)
-  .replace(/\$5/g, route);
+  .replace(/\$4/g, route)
+  .replace(/\$5/g, desc);
 
 serviceContent = serviceContent
   .replace(/\$1/g, name)
@@ -89,9 +113,15 @@ entityContent = entityContent
   .replace(/\$1/g, name)
   .replace(/\$2/g, filename)
   .replace(/\$3/g, varName)
-  .replace(/\$4/g, tableName);
+  .replace(/\$4/g, tableName)
+  .replace(/\$5/g, shortName);
 
 dtoContent = dtoContent
+  .replace(/\$1/g, name)
+  .replace(/\$2/g, filename)
+  .replace(/\$3/g, varName);
+
+pageDtoContent = pageDtoContent
   .replace(/\$1/g, name)
   .replace(/\$2/g, filename)
   .replace(/\$3/g, varName);
@@ -101,10 +131,15 @@ voContent = voContent
   .replace(/\$2/g, filename)
   .replace(/\$3/g, varName);
 
+pageVoContent = pageVoContent
+  .replace(/\$1/g, name)
+  .replace(/\$2/g, filename)
+  .replace(/\$3/g, varName);
+
 fs.writeFileSync(
   path.resolve(
     __dirname,
-    `../src/module/system/${moduleName}/controller/${moduleName}.ts`
+    `../src/module/${dir}/${moduleName}/controller/${moduleName}.ts`
   ),
   controllerContent
 );
@@ -112,7 +147,7 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.resolve(
     __dirname,
-    `../src/module/system/${moduleName}/service/${moduleName}.ts`
+    `../src/module/${dir}/${moduleName}/service/${moduleName}.ts`
   ),
   serviceContent
 );
@@ -120,7 +155,7 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.resolve(
     __dirname,
-    `../src/module/system/${moduleName}/entity/${moduleName}.ts`
+    `../src/module/${dir}/${moduleName}/entity/${moduleName}.ts`
   ),
   entityContent
 );
@@ -128,7 +163,7 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.resolve(
     __dirname,
-    `../src/module/system/${moduleName}/dto/${moduleName}.ts`
+    `../src/module/${dir}/${moduleName}/dto/${moduleName}.ts`
   ),
   dtoContent
 );
@@ -136,7 +171,23 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.resolve(
     __dirname,
-    `../src/module/system/${moduleName}/vo/${moduleName}.ts`
+    `../src/module/${dir}/${moduleName}/dto/${moduleName}-page.ts`
+  ),
+  pageDtoContent
+);
+
+fs.writeFileSync(
+  path.resolve(
+    __dirname,
+    `../src/module/${dir}/${moduleName}/vo/${moduleName}.ts`
   ),
   voContent
+);
+
+fs.writeFileSync(
+  path.resolve(
+    __dirname,
+    `../src/module/${dir}/${moduleName}/vo/${moduleName}-page.ts`
+  ),
+  pageVoContent
 );

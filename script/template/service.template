@@ -1,7 +1,7 @@
-import { Provide } from '@midwayjs/decorator';
+import { Provide } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
-import { BaseService } from '../../../common/base.service';
+import { BaseService } from '../../../../common/base-service';
 import { $1Entity } from '../entity/$2';
 
 @Provide()

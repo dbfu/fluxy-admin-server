@@ -1,55 +1,75 @@
 import {
   Body,
   Controller,
+  Del,
   Get,
   Inject,
-  Post,
-  Provide,
-  Query,
-  ALL,
-  Put,
   Param,
-  Del,
-} from '@midwayjs/decorator';
+  Post,
+  Put,
+  Query,
+} from '@midwayjs/core';
+import { ApiOkResponse } from '@midwayjs/swagger';
 import { $1DTO } from '../dto/$2';
 import { $1Service } from '../service/$2';
+import { AssertUtils } from '../../../../utils/assert';
+import { FilterQuery } from '../../../../utils/filter-query';
+import { $1PageVO } from '../vo/$3-page';
+import { $1PageDTO } from '../dto/$3-page';
+import { $1Entity } from '../entity/$3';
+import { $1VO } from '../vo/$3';
 
-@Provide()
-@Controller('/$5')
+@Controller('/$4', { description: '$5' })
 export class $1Controller {
   @Inject()
   $3Service: $1Service;
 
+  @Get('/page', { description: '分页查询' })
+  @ApiOkResponse({
+    type: $1PageVO,
+  })
+  async page(@Query() $3PageDTO: $1PageDTO) {
+    const filterQuery = new FilterQuery<$1Entity>();
+
+    return await this.$3Service.page($3PageDTO, {
+      where: filterQuery.where,
+      order: { createDate: 'DESC' },
+    });
+  }
+
   @Post('/', { description: '新建' })
-  async create(@Body(ALL) data: $1DTO) {
+  async create(@Body() data: $1DTO) {
     return await this.$3Service.create(data.toEntity());
   }
 
   @Put('/', { description: '编辑' })
-  async edit(@Body(ALL) data: $1DTO) {
-    const $3 = await this.$3Service.getById(data.id);
-    // update
-    return await this.$3Service.edit($3);
+  async edit(@Body() data: $1DTO) {
+    AssertUtils.notEmpty(data.id, 'id不能为空');
+    return await this.$3Service.edit(data.toEntity());
   }
 
   @Del('/:id', { description: '删除' })
-  async remove(@Param('id') id: number) {
-    const $3 = await this.$3Service.getById(id);
-    await this.$3Service.remove($3);
+  async remove(@Param('id') id: string) {
+    AssertUtils.notEmpty(id, 'id不能为空');
+    await this.$3Service.removeById(id);
   }
 
   @Get('/:id', { description: '根据id查询' })
-  async getById(@Param('id') id: number) {
+  async getById(@Param('id') id: string) {
     return await this.$3Service.getById(id);
   }
 
-  @Get('/page', { description: '分页查询' })
-  async page(@Query('page') page: number, @Query('size') size: number) {
-    return await this.$3Service.page(page, size);
-  }
+  @Get('/list', { description: '全部列表' })
+  @ApiOkResponse({
+    type: $1VO,
+    isArray: true,
+  })
+  async list(@Query() $3PageDTO: $1PageDTO) {
+    const filterQuery = new FilterQuery<$1Entity>();
 
-  @Get('/list', { description: '查询全部' })
-  async list() {
-    return await this.$3Service.list();
+    return await this.$3Service.list({
+      where: filterQuery.where,
+      order: { createDate: 'DESC' },
+    });
   }
 }

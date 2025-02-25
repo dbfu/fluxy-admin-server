@@ -1,9 +1,9 @@
 import { Rule } from '@midwayjs/validate';
 import { ApiProperty } from '@midwayjs/swagger';
-import { R } from '../../../common/base.error.util';
-import { requiredString } from '../../../common/common.validate.rules';
-import { $1Entity } from '../entity/$2';
-import { BaseDTO } from '../../../common/base.dto';
+import { $1Entity } from '../entity/$3';
+import { BaseDTO } from '../../../../common/base-dto';
+import { requiredString } from '../../../../common/common-validate-rules';
+import { R } from '../../../../common/base-error-util';
 
 export class $1DTO extends BaseDTO<$1Entity> {
   @ApiProperty({

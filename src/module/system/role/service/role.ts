@@ -88,7 +88,7 @@ export class RoleService extends BaseService<RoleEntity> {
         .values(casbinRules)
         .execute();
 
-      return entity.toVO();
+      return entity;
     });
     this.casbinWatcher.publishData();
     return result;
@@ -186,7 +186,7 @@ export class RoleService extends BaseService<RoleEntity> {
             .execute();
         }
       }
-      return entity.toVO();
+      return entity;
     });
     this.casbinWatcher.publishData();
 

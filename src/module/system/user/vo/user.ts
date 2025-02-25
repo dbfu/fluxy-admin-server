@@ -18,14 +18,11 @@ export class UserVO {
   @ApiProperty({ description: '邮箱' })
   email: string;
 
-  @ApiProperty({ description: '性别（0:女，1:男）' })
-  sex?: number;
-
   @ApiProperty({ description: '头像地址' })
   avatarPath: string;
 
   @ApiProperty({ description: '头像', type: FileEntity })
-  avatarEntity?: FileEntity;
+  avatar?: FileEntity;
 
   @ApiProperty({
     description: '角色列表',

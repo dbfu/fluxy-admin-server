@@ -9,8 +9,8 @@ import {
   Post,
   Put,
   Query,
-} from '@midwayjs/decorator';
-import { ApiResponse } from '@midwayjs/swagger';
+} from '@midwayjs/core';
+import { ApiOkResponse, ApiResponse } from '@midwayjs/swagger';
 import { Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { FilterQuery } from '../../../../utils/filter-query';
 import { like } from '../../../../utils/typeorm-utils';
@@ -19,8 +19,11 @@ import { ApiLogPageDTO } from '../dto/api-log-page';
 import { ApiLogEntity } from '../entity/api-log';
 import { ApiLogService } from '../service/api-log';
 import { ApiLogPageVO } from '../vo/api-log-page';
+import { BodyParamsVO } from '../vo/body-params';
+import { QueryParamsVO } from '../vo/query-params';
+import { ResultParamsVO } from '../vo/result-params';
 
-@Controller('/api-log')
+@Controller('/api-log', { description: '接口日志' })
 export class ApiLogController {
   @Inject()
   apiLogService: ApiLogService;
@@ -39,8 +42,7 @@ export class ApiLogController {
 
   @Del('/:id', { description: '删除' })
   async remove(@Param('id') id: string) {
-    const apiLog = await this.apiLogService.getById(id);
-    await this.apiLogService.remove(apiLog);
+    await this.apiLogService.removeById(id);
   }
 
   @Get('/:id', { description: '根据id查询' })
@@ -119,16 +121,25 @@ export class ApiLogController {
   }
 
   @Get('/query', { description: '查看请求query参数' })
+  @ApiOkResponse({
+    type: QueryParamsVO,
+  })
   async getQueryData(@Query('id') id: string) {
     return await this.apiLogService.getQueryData(id);
   }
 
   @Get('/body', { description: '查看请求body参数' })
+  @ApiOkResponse({
+    type: BodyParamsVO,
+  })
   async getBodyData(@Query('id') id: string) {
     return await this.apiLogService.getBodyData(id);
   }
 
   @Get('/result', { description: '查看响应结果' })
+  @ApiOkResponse({
+    type: ResultParamsVO,
+  })
   async getResultData(@Query('id') id: string) {
     return await this.apiLogService.getResultData(id);
   }

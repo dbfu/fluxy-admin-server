@@ -51,6 +51,8 @@ export class AuthController {
   loginLogService: LoginLogService;
   @Config('resetPasswordCallbackUrl')
   resetPasswordCallbackUrl: string;
+  @Config('title')
+  title: string;
 
   @Post('/login', { description: '登录' })
   @ApiResponse({ type: TokenVO })
@@ -131,15 +133,11 @@ export class AuthController {
   @NotAuth()
   async logout(): Promise<boolean> {
     // 清除token和refreshToken
-    const res = await this.redisService
+    await this.redisService
       .multi()
       .del(`token:${this.ctx.token}`)
       .del(`refreshToken:${this.ctx.userInfo.refreshToken}`)
       .exec();
-
-    if (res.some(item => item[0])) {
-      throw R.error('退出登录失败');
-    }
 
     return true;
   }
@@ -189,10 +187,10 @@ export class AuthController {
       <p>如您未提交该申请，请不要理会此邮件，对此为您带来的不便深表歉意。</p>
       <p>本次链接30分钟后失效。</p>
       <div style="text-align: right;margin-top: 50px;">
-        <span>fluxy-admin</span>
+        <span>${this.title}</span>
       </div>
     </div>`,
-      subject: 'fluxy-admin平台密码重置提醒',
+      subject: `${this.title}平台密码重置提醒`,
     });
   }
 

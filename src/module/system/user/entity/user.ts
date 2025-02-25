@@ -13,10 +13,8 @@ export class UserEntity extends BaseEntity {
   nickName: string;
   @Column({ comment: '手机号' })
   phoneNumber: string;
-  @Column({ comment: '邮箱' })
+  @Column({ comment: '邮箱', nullable: true })
   email: string;
-  @Column({ comment: '性别（0:女，1:男）', nullable: true })
-  sex?: number;
   @Column({ comment: '密码' })
   password: string;
   toVO(): UserVO {

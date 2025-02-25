@@ -1,5 +1,13 @@
-import { $1Entity } from '../entity/$2';
-import { PickVO } from '../../../utils/vo.utils';
+import { ApiProperty } from '@midwayjs/swagger';
+import { BaseVO } from '../../../../common/base-vo';
 
-// eslint-disable-next-line prettier/prettier
-export class $1VO extends PickVO($1Entity, []) {}
+export class $1VO extends BaseVO {
+  @ApiProperty({
+    description: '代码',
+  })
+  code?: string;
+  @ApiProperty({
+    description: '名称',
+  })
+  name?: string;
+}

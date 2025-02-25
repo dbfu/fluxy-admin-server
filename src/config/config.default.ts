@@ -7,11 +7,13 @@ import { MailConfig, MinioConfig, TokenConfig } from '../interface';
 import { EverythingSubscriber } from '../typeorm-event-subscriber';
 
 import { CasbinRule, createAdapter } from '@midwayjs/casbin-typeorm-adapter';
+import { uploadWhiteList } from '@midwayjs/upload';
 
 export default (appInfo: MidwayAppInfo) => {
   return {
     // use for cookie sign key, should change to your own and keep security
     keys: '1684629293601_5943',
+    title: 'fluxy-admin',
     koa: {
       port: 7001,
       globalPrefix: '/api',
@@ -155,5 +157,10 @@ export default (appInfo: MidwayAppInfo) => {
       },
     },
     resetPasswordCallbackUrl: 'http://localhost:5173',
+    loginUrl: 'http://localhost:5173/user/login',
+    upload: {
+      whitelist: [...uploadWhiteList, '.xlsx', '.xls'],
+    },
+    defaultPassword: '123456',
   };
 };

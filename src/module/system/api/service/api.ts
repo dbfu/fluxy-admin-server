@@ -20,14 +20,14 @@ export class ApiService {
   @Inject()
   notAuthRouters: RouterInfo[];
 
-  // 按contoller获取接口列表
+  // 按获取所有controller获取接口列表
   async getApiList() {
-    // 获取所有contoller
+    // 获取所有controller
     const controllerModules = listModule(CONTROLLER_KEY);
 
     const list = [];
 
-    // 遍历contoller，获取controller的信息存到list数组中
+    // 遍历controller，获取controller的信息存到list数组中
     for (const module of controllerModules) {
       const controllerInfo = getClassMetadata(CONTROLLER_KEY, module) || [];
       list.push({

@@ -1,5 +1,6 @@
 import {
   Body,
+  Config,
   Controller,
   Del,
   Get,
@@ -31,6 +32,8 @@ export class UserController {
   mailService: MailService;
   @Inject()
   redisService: RedisService;
+  @Config('title')
+  title: string;
 
   @Get('/page', { description: '分页查询' })
   @ApiOkResponse({
@@ -89,7 +92,7 @@ export class UserController {
       html: `<div>
         您本次的验证码是<span style="color:#5867dd;font-weight:800;font-size:24px;">${emailCaptcha}</span>，验证码有效期为30分钟。
       </div`,
-      subject: 'fluxy-admin平台邮箱校验提醒',
+      subject: `${this.title}平台邮箱校验提醒`,
     });
   }
 }

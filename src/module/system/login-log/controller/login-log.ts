@@ -11,6 +11,7 @@ import {
   Query,
 } from '@midwayjs/decorator';
 import { ApiOkResponse } from '@midwayjs/swagger';
+import { AssertUtils } from '../../../../utils/assert';
 import { FilterQuery } from '../../../../utils/filter-query';
 import { like } from '../../../../utils/typeorm-utils';
 import { LoginLogDTO } from '../dto/login-log';
@@ -38,8 +39,8 @@ export class LoginLogController {
 
   @Del('/:id', { description: '删除' })
   async remove(@Param('id') id: string) {
-    const loginLog = await this.loginLogService.getById(id);
-    await this.loginLogService.remove(loginLog);
+    AssertUtils.notEmpty(id, 'id不能为空');
+    await this.loginLogService.removeById(id);
   }
 
   @Get('/:id', { description: '根据id查询' })

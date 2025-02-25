@@ -1,7 +1,10 @@
 import { ApiProperty } from '@midwayjs/swagger';
 import { Rule } from '@midwayjs/validate';
 import { R } from '../../../../common/base-error-util';
-import { email, requiredString } from '../../../../common/common-validate-rules';
+import {
+  email,
+  requiredString,
+} from '../../../../common/common-validate-rules';
 
 export class ResetPasswordDTO {
   @ApiProperty({ description: '密码' })

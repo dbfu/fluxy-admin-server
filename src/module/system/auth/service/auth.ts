@@ -149,7 +149,7 @@ export class AuthService {
       .createQueryBuilder('t')
       .leftJoinAndSelect(UserRoleEntity, 'user_role', 't.id = user_role.userId')
       .leftJoinAndMapOne(
-        't.avatarEntity',
+        't.avatar',
         FileEntity,
         'file',
         'file.pkValue = t.id and file.pkName = "user_avatar"'

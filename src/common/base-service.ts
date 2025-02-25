@@ -1,12 +1,7 @@
 import { Inject } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 import { InjectDataSource } from '@midwayjs/typeorm';
-import {
-  DataSource,
-  FindManyOptions,
-  FindOptionsWhere,
-  Repository,
-} from 'typeorm';
+import { DataSource, FindManyOptions, Repository } from 'typeorm';
 import { BaseEntity } from './base-entity';
 import { PageDTO } from './page-dto';
 
@@ -19,16 +14,24 @@ export abstract class BaseService<T extends BaseEntity = any> {
 
   abstract getModel(): Repository<T>;
 
-  async create(entity: T): Promise<any> {
+  async create(entity: T): Promise<T> {
     return await this.getModel().save(entity);
   }
 
-  async edit(entity: T): Promise<any> {
+  async edit(entity: T): Promise<T> {
     return await this.getModel().save(entity);
   }
 
   async remove(entity: T) {
     await this.getModel().remove(entity);
+  }
+
+  async removeById(id: string) {
+    await this.getModel()
+      .createQueryBuilder()
+      .delete()
+      .where('id = :id', { id })
+      .execute();
   }
 
   async getById(id: string): Promise<T> {
@@ -57,12 +60,12 @@ export abstract class BaseService<T extends BaseEntity = any> {
     };
   }
 
-  async list(where?: FindOptionsWhere<T>) {
-    const order: any = { createDate: 'desc' };
-    const data = await this.getModel().find({
-      where,
-      order,
-    });
+  async list(options: FindManyOptions<T> = {}) {
+    if (!options.order) {
+      options.order = { createDate: 'DESC' } as any;
+    }
+
+    const data = await this.getModel().find(options);
 
     return data;
   }

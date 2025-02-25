@@ -51,7 +51,6 @@ export class MenuDTO extends BaseDTO<MenuEntity> {
   show?: boolean;
 
   @ApiProperty({ description: '权限码' })
-  @Rule(string.allow(null))
   authCode?: string;
 
   @ApiProperty({ description: '低代码页面配置数据' })

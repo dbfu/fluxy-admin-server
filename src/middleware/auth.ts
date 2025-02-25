@@ -1,11 +1,11 @@
 import { CasbinEnforcerService } from '@midwayjs/casbin';
 import {
-    Config,
-    IMiddleware,
-    Inject,
-    Middleware,
-    MidwayWebRouterService,
-    RouterInfo,
+  Config,
+  IMiddleware,
+  Inject,
+  Middleware,
+  MidwayWebRouterService,
+  RouterInfo,
 } from '@midwayjs/core';
 import { Context, NextFunction } from '@midwayjs/koa';
 import { RedisService } from '@midwayjs/redis';

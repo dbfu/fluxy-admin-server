@@ -1,4 +1,4 @@
-import { Inject, Provide } from '@midwayjs/decorator';
+import { Config, Inject, Provide } from '@midwayjs/decorator';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Not, Repository } from 'typeorm';
@@ -12,7 +12,6 @@ import { MailService } from '../../../../common/mail-service';
 import { AssertUtils } from '../../../../utils/assert';
 import { FilterQuery } from '../../../../utils/filter-query';
 import { like } from '../../../../utils/typeorm-utils';
-import { uuid } from '../../../../utils/uuid';
 import { FileEntity } from '../../file/entity/file';
 import { FileService } from '../../file/service/file';
 import { RoleEntity } from '../../role/entity/role';
@@ -45,6 +44,12 @@ export class UserService extends BaseService<UserEntity> {
   casbinEnforcerService: CasbinEnforcerService;
   @Inject()
   casbinWatcher: NodeRedisWatcher;
+  @Config('title')
+  title: string;
+  @Config('loginUrl')
+  loginUrl: string;
+  @Config('defaultPassword')
+  defaultPassword: string;
 
   getModel(): Repository<UserEntity> {
     return this.userModel;
@@ -107,23 +112,16 @@ export class UserService extends BaseService<UserEntity> {
     const { userName, phoneNumber, email } = userDTO;
 
     let notExist = (await this.userModel.countBy({ userName })) === 0;
-
     AssertUtils.isTrue(notExist, '当前用户名已存在');
 
     notExist = (await this.userModel.countBy({ phoneNumber })) === 0;
-
     AssertUtils.isTrue(notExist, '当前手机号已存在');
 
     notExist = (await this.userModel.countBy({ email })) === 0;
-
     AssertUtils.isTrue(notExist, '当前邮箱已存在');
 
-    // 随机生成密码，并发送到对应的邮箱中。
-    const password = uuid();
-
     // 添加用户，对密码进行加盐加密
-    const hashPassword = bcrypt.hashSync(password, 10);
-
+    const hashPassword = bcrypt.hashSync(this.defaultPassword, 10);
     entity.password = hashPassword;
 
     // 使用事物
@@ -156,7 +154,7 @@ export class UserService extends BaseService<UserEntity> {
       const casbinRules = userDTO.roleIds.map(roleId => {
         const casbinRule = new CasbinRule();
         casbinRule.ptype = 'g';
-        casbinRule.v0 = userDTO.id;
+        casbinRule.v0 = entity.id;
         casbinRule.v1 = roleId;
         return casbinRule;
       });
@@ -171,12 +169,12 @@ export class UserService extends BaseService<UserEntity> {
 
       this.mailService.sendMail({
         to: email,
-        subject: 'fluxy-admin平台账号创建成功',
+        subject: `${this.title}平台账号创建成功`,
         html: `<div>
         <p><span style="color:#5867dd;">${userDTO.nickName}</span>，你的账号已开通成功</p>
-        <p>登录地址：<a href="https://fluxyadmin.cn/user/login">https://fluxyadmin.cn/user/login</a></p>
+        <p>登录地址：<a href="${this.loginUrl}">${this.loginUrl}</a></p>
         <p>登录账号：${userDTO.email}</p>
-        <p>登录密码：${password}</p>
+        <p>登录密码：${this.defaultPassword}</p>
         </div>`,
       });
     });
@@ -191,7 +189,7 @@ export class UserService extends BaseService<UserEntity> {
    * @returns
    */
   async updateUser(userDTO: UserDTO) {
-    const { userName, phoneNumber, email, id, nickName, sex, avatar } = userDTO;
+    const { userName, phoneNumber, email, id, nickName, avatar } = userDTO;
 
     let user = await this.userModel.findOneBy({ userName, id: Not(id) });
     AssertUtils.isTrue(!user, '当前用户名已存在');
@@ -222,7 +220,6 @@ export class UserService extends BaseService<UserEntity> {
           .set({
             nickName,
             phoneNumber,
-            sex,
           })
           .where('id = :id', { id: userDTO.id })
           .execute(),

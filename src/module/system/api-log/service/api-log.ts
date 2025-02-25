@@ -78,8 +78,10 @@ export class ApiLogService extends BaseService<ApiLogEntity> {
     const apiLog = new ApiLogEntity();
     apiLog.url = ctx.path;
     apiLog.method = ctx.method;
-    apiLog.duration = new Date().getTime() - ctx.requestStartTime.getTime();
-    apiLog.startTime = ctx.requestStartTime;
+    apiLog.duration =
+      new Date().getTime() -
+      (ctx.requestStartTime?.getTime() || new Date().getTime());
+    apiLog.startTime = ctx.requestStartTime || new Date();
     apiLog.endTime = new Date();
     apiLog.ip = getIp(ctx);
     apiLog.query = JSON.stringify(ctx.request.query);

@@ -76,23 +76,22 @@ let name;
 const filename = moduleName;
 let varName = moduleName;
 let tableName = moduleName;
-let route = moduleName;
+const route = moduleName;
 
-if (moduleName.includes('.')) {
+if (moduleName.includes('-')) {
   name = moduleName
-    .split('.')
+    .split('-')
     .map(o => firstCharToUpperCase(o))
     .join('');
 
   varName = moduleName
-    .split('.')
+    .split('-')
     .filter((_, index) => index > 0)
     .map(o => firstCharToUpperCase(o))
     .join('');
-  varName = [moduleName.split('.')[0], varName].join('');
+  varName = [moduleName.split('-')[0], varName].join('');
 
   tableName = moduleName.replace(/\./g, '_');
-  route = moduleName.replace(/\./g, '-');
 } else {
   name = moduleName[0].toUpperCase() + moduleName.substring(1);
 }

@@ -25,11 +25,11 @@ export default (appInfo: MidwayAppInfo) => {
            * 单数据库实例
            */
           type: 'mysql',
-          host: 'localhost', // 数据库ip地址，本地就写localhost
-          port: 3306,
-          username: 'root',
-          password: '12345678',
-          database: 'fluxy-admin', // 数据库名称
+          host: env.DB_HOST,
+          port: env.DB_PORT ? Number(env.DB_PORT) : 3306,
+          username: env.DB_USERNAME,
+          password: env.DB_PASSWORD,
+          database: env.DB_NAME,
           synchronize: true, // 如果第一次使用，不存在表，有同步的需求可以写 true，注意会丢数据
           logging: true,
           // 扫描entity文件夹
@@ -47,32 +47,32 @@ export default (appInfo: MidwayAppInfo) => {
     redis: {
       clients: {
         default: {
-          port: 6379, // Redis port
-          host: env.REDIS_HOST || 'localhost', // Redis host
+          port: env.REDIS_PORT, // Redis port
+          host: env.REDIS_HOST, // Redis host
           password: env.REDIS_PASSWORD || '',
           db: 0,
         },
         publish: {
-          port: 6379, // Redis port
-          host: env.REDIS_HOST || 'localhost', // Redis host
+          port: env.REDIS_PORT, // Redis port
+          host: env.REDIS_HOST, // Redis host
           password: env.REDIS_PASSWORD || '',
           db: 1,
         },
         subscribe: {
-          port: 6379, // Redis port
-          host: env.REDIS_HOST || 'localhost', // Redis host
+          port: env.REDIS_PORT, // Redis port
+          host: env.REDIS_HOST, // Redis host
           password: env.REDIS_PASSWORD || '',
           db: 2,
         },
         'node-casbin-official': {
-          port: 6379, // Redis port
-          host: env.REDIS_HOST || 'localhost', // Redis host
+          port: env.REDIS_PORT, // Redis port
+          host: env.REDIS_HOST, // Redis host
           password: env.REDIS_PASSWORD || '',
           db: 3,
         },
         'node-casbin-sub': {
-          port: 6379, // Redis port
-          host: env.REDIS_HOST || 'localhost', // Redis host
+          port: env.REDIS_PORT, // Redis port
+          host: env.REDIS_HOST, // Redis host
           password: env.REDIS_PASSWORD || '',
           db: 3,
         },
@@ -90,8 +90,8 @@ export default (appInfo: MidwayAppInfo) => {
     cache: {
       store: redisStore,
       options: {
-        host: env.REDIS_HOST || 'localhost', // default value
-        port: 6379, // default value
+        host: env.REDIS_HOST, // default value
+        port: env.REDIS_PORT, // default value
         password: env.REDIS_PASSWORD || '',
         db: 0,
         keyPrefix: 'cache:',
@@ -114,28 +114,28 @@ export default (appInfo: MidwayAppInfo) => {
       idPrefix: 'captcha',
     },
     minio: {
-      endPoint: env.MINIO_HOST || 'localhost',
+      endPoint: env.MINIO_HOST,
       port: env.MINIO_PORT ? Number(env.MINIO_PORT) : 9002,
       useSSL: false,
-      accessKey: env.MINIO_ACCESS_KEY || 'root',
-      secretKey: env.MINIO_SECRET_KEY || '12345678',
-      bucketName: env.MINIO_BUCKET_NAME || 'fluxy-admin',
+      accessKey: env.MINIO_ACCESS_KEY,
+      secretKey: env.MINIO_SECRET_KEY,
+      bucketName: env.MINIO_BUCKET_NAME,
     } as MinioConfig,
     bull: {
       defaultQueueOptions: {
         redis: {
-          port: 6379,
-          host: env.REDIS_HOST || 'localhost',
+          port: env.REDIS_PORT,
+          host: env.REDIS_HOST,
           password: env.REDIS_PASSWORD || '',
         },
       },
     },
     mail: {
-      host: env.MAIL_HOST || 'smtp.163.com',
+      host: env.MAIL_HOST,
       port: env.MAIL_PORT ? Number(env.MAIL_PORT) : 465,
       secure: true,
       auth: {
-        user: env.MAIL_USER || '18256485741@163.com',
+        user: env.MAIL_USER,
         pass: env.MAIL_PASS,
       },
     } as MailConfig,
@@ -162,5 +162,6 @@ export default (appInfo: MidwayAppInfo) => {
       whitelist: [...uploadWhiteList, '.xlsx', '.xls'],
     },
     defaultPassword: '123456',
+    autoResetDataBase: env.AUTO_RESET_DATABASE === 'true',
   };
 };

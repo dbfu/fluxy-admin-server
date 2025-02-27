@@ -4,11 +4,7 @@ import * as koa from '@midwayjs/koa';
 import * as Importer from 'mysql-import';
 import * as path from 'path';
 
-@Processor('init-database', {
-  repeat: {
-    cron: '0 0 0 * * *',
-  },
-})
+@Processor('init-database')
 export class InitDatabaseProcessor implements IProcessor {
   @Config('typeorm')
   typeormConfig: any;
@@ -31,9 +27,9 @@ export class InitDatabaseProcessor implements IProcessor {
     });
 
     try {
+      console.log('正在初始化数据库数据...');
       await importer.import(path.join(this.app.getBaseDir(), './init.sql'));
-      const files_imported = importer.getImported();
-      console.log(`${files_imported.length} SQL file(s) imported.`);
+      console.log('初始化数据库数据成功');
     } catch (err) {
       console.error(err);
     }

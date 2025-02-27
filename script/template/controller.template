@@ -14,10 +14,11 @@ import { $1DTO } from '../dto/$2';
 import { $1Service } from '../service/$2';
 import { AssertUtils } from '../../../../utils/assert';
 import { FilterQuery } from '../../../../utils/filter-query';
-import { $1PageVO } from '../vo/$3-page';
-import { $1PageDTO } from '../dto/$3-page';
-import { $1Entity } from '../entity/$3';
-import { $1VO } from '../vo/$3';
+import { $1PageVO } from '../vo/$2-page';
+import { $1PageDTO } from '../dto/$2-page';
+import { $1Entity } from '../entity/$2';
+import { $1VO } from '../vo/$2';
+import { like } from '../../../../utils/typeorm-utils';
 
 @Controller('/$4', { description: '$5' })
 export class $1Controller {
@@ -30,6 +31,10 @@ export class $1Controller {
   })
   async page(@Query() $3PageDTO: $1PageDTO) {
     const filterQuery = new FilterQuery<$1Entity>();
+
+    filterQuery
+      .append('code', like($3PageDTO.code), !!$3PageDTO.code)
+      .append('name', like($3PageDTO.name), !!$3PageDTO.name);
 
     return await this.$3Service.page($3PageDTO, {
       where: filterQuery.where,

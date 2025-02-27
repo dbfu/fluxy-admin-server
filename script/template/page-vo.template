@@ -1,4 +1,4 @@
 import { PageVOWrapper } from '../../../../common/page-result-vo';
-import { $1VO } from './$3';
+import { $1VO } from './$2';
 
 export class $1PageVO extends PageVOWrapper<$1VO>($1VO) {}

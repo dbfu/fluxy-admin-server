@@ -58,7 +58,12 @@ export class AuthService {
    * @param loginDTO
    */
   async login(loginDTO: LoginDTO): Promise<TokenVO> {
-    const { accountNumber } = loginDTO;
+    const { accountNumber, captcha, captchaId } = loginDTO;
+
+    const result = await this.captchaService.check(captchaId, captcha);
+
+    AssertUtils.isTrue(result, '验证码错误');
+
     const user = await this.userModel
       .createQueryBuilder('user')
       .where('user.phoneNumber = :accountNumber', {
@@ -91,12 +96,6 @@ export class AuthService {
       .sadd(`userToken_${user.id}`, token)
       .sadd(`userRefreshToken_${user.id}`, refreshToken)
       .exec();
-
-    const { captcha, captchaId } = loginDTO;
-
-    const result = await this.captchaService.check(captchaId, captcha);
-
-    AssertUtils.notEmpty(result, '验证码错误');
 
     return {
       expire,

@@ -75,10 +75,11 @@ export class AuthController {
       AssertUtils.notEmpty(password, '登录出现异常，请重新登录');
       loginDTO.password = password;
 
+      const loginResult = await this.authService.login(loginDTO);
+
       loginLog.status = true;
       loginLog.message = '成功';
-
-      return await this.authService.login(loginDTO);
+      return loginResult;
     } catch (error) {
       loginLog.status = false;
       loginLog.message = error?.message || '登录失败';

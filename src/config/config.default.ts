@@ -127,6 +127,7 @@ export default (appInfo: MidwayAppInfo) => {
           port: env.REDIS_PORT,
           host: env.REDIS_HOST,
           password: env.REDIS_PASSWORD || '',
+          db: 4,
         },
       },
     },

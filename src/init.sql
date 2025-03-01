@@ -11,7 +11,7 @@
  Target Server Version : 80030 (8.0.30)
  File Encoding         : 65001
 
- Date: 24/12/2024 17:24:03
+ Date: 01/03/2025 23:17:13
 */
 
 SET NAMES utf8mb4;
@@ -213,6 +213,8 @@ INSERT INTO `sys_menu` (`id`, `createDate`, `updateDate`, `name`, `icon`, `type`
 INSERT INTO `sys_menu` (`id`, `createDate`, `updateDate`, `name`, `icon`, `type`, `url`, `show`, `filePath`, `orderNumber`, `parentId`, `route`, `authCode`, `curVersion`) VALUES (65732465561436160, '2023-12-20 09:17:21.043472', '2023-12-20 09:17:53.000000', '编辑页面', NULL, 2, NULL, 0, '/low-code/page/edit/index.tsx', 20, '61801171353862144', '/edit-page/:versionId', NULL, NULL);
 INSERT INTO `sys_menu` (`id`, `createDate`, `updateDate`, `name`, `icon`, `type`, `url`, `show`, `filePath`, `orderNumber`, `parentId`, `route`, `authCode`, `curVersion`) VALUES (65836338502434816, '2023-12-20 16:10:06.286189', '2023-12-20 16:10:06.286189', '复制页面', NULL, 2, NULL, 0, '/low-code/page/copy/index.tsx', 30, '61801171353862144', '/copy-page/:versionId', NULL, NULL);
 INSERT INTO `sys_menu` (`id`, `createDate`, `updateDate`, `name`, `icon`, `type`, `url`, `show`, `filePath`, `orderNumber`, `parentId`, `route`, `authCode`, `curVersion`) VALUES (197905447867383808, '2024-12-19 02:45:35.678668', '2024-12-19 02:45:35.678668', 'API请求日志', 'FileOutlined', 2, NULL, 1, '/api-log/index.tsx', 50, '1620378745044992', '/api-log', NULL, NULL);
+INSERT INTO `sys_menu` (`id`, `createDate`, `updateDate`, `name`, `icon`, `type`, `url`, `show`, `filePath`, `orderNumber`, `parentId`, `route`, `authCode`, `curVersion`) VALUES (224186130881314816, '2025-03-01 15:15:38.781624', '2025-03-01 15:15:38.781624', '全部接口权限', NULL, 3, NULL, 0, NULL, NULL, '9978851039903744', NULL, 'login-log-all', NULL);
+INSERT INTO `sys_menu` (`id`, `createDate`, `updateDate`, `name`, `icon`, `type`, `url`, `show`, `filePath`, `orderNumber`, `parentId`, `route`, `authCode`, `curVersion`) VALUES (224186284615139328, '2025-03-01 15:16:15.434063', '2025-03-01 15:16:15.434063', '全部接口权限', NULL, 3, NULL, 0, NULL, NULL, '197905447867383808', NULL, 'api-log-all', NULL);
 COMMIT;
 
 -- ----------------------------
@@ -260,6 +262,21 @@ INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`
 INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (198248133493260298, '2024-12-20 01:27:18.301205', '2024-12-20 01:27:18.301205', '19974159782117376', 'post', '/role/');
 INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (198248133493260299, '2024-12-20 01:27:18.301205', '2024-12-20 01:27:18.301205', '19974159782117376', 'put', '/role/');
 INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (198248133493260300, '2024-12-20 01:27:18.301205', '2024-12-20 01:27:18.301205', '19974159782117376', 'delete', '/role/:id');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186130931646464, '2025-03-01 15:15:38.792416', '2025-03-01 15:15:38.792416', '224186130881314816', 'get', '/login-log/page');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186130931646465, '2025-03-01 15:15:38.801860', '2025-03-01 15:15:38.801860', '224186130881314816', 'get', '/login-log/list');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186130931646466, '2025-03-01 15:15:38.807469', '2025-03-01 15:15:38.807469', '224186130881314816', 'post', '/login-log');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186130931646467, '2025-03-01 15:15:38.812806', '2025-03-01 15:15:38.812806', '224186130881314816', 'put', '/login-log');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186130931646468, '2025-03-01 15:15:38.818604', '2025-03-01 15:15:38.818604', '224186130881314816', 'delete', '/login-log/:id');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186130931646469, '2025-03-01 15:15:38.824688', '2025-03-01 15:15:38.824688', '224186130881314816', 'get', '/login-log/:id');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186284657082368, '2025-03-01 15:16:15.444298', '2025-03-01 15:16:15.444298', '224186284615139328', 'get', '/api-log/result');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186284657082369, '2025-03-01 15:16:15.454694', '2025-03-01 15:16:15.454694', '224186284615139328', 'get', '/api-log/query');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186284657082370, '2025-03-01 15:16:15.464593', '2025-03-01 15:16:15.464593', '224186284615139328', 'get', '/api-log/page');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186284657082371, '2025-03-01 15:16:15.470571', '2025-03-01 15:16:15.470571', '224186284615139328', 'get', '/api-log/list');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186284657082372, '2025-03-01 15:16:15.477828', '2025-03-01 15:16:15.477828', '224186284615139328', 'get', '/api-log/body');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186284657082373, '2025-03-01 15:16:15.483697', '2025-03-01 15:16:15.483697', '224186284615139328', 'post', '/api-log');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186284657082374, '2025-03-01 15:16:15.488193', '2025-03-01 15:16:15.488193', '224186284615139328', 'put', '/api-log');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186284657082375, '2025-03-01 15:16:15.492178', '2025-03-01 15:16:15.492178', '224186284615139328', 'delete', '/api-log/:id');
+INSERT INTO `sys_menu_api` (`id`, `createDate`, `updateDate`, `menuId`, `method`, `path`) VALUES (224186284657082376, '2025-03-01 15:16:15.497255', '2025-03-01 15:16:15.497255', '224186284615139328', 'get', '/api-log/:id');
 COMMIT;
 
 -- ----------------------------

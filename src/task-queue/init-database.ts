@@ -17,6 +17,7 @@ export class InitDatabaseProcessor implements IProcessor {
       password,
       database,
       username: user,
+      port,
     } = this.typeormConfig.dataSource.default;
 
     const importer = new Importer({
@@ -24,6 +25,7 @@ export class InitDatabaseProcessor implements IProcessor {
       user,
       password,
       database,
+      port,
     });
 
     try {

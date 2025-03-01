@@ -68,7 +68,7 @@
     "node": ">=12.0.0"
   },
   "scripts": {
-    "start": "node ./script/init-database && NODE_ENV=production pm2-runtime start ./bootstrap.js --name midway_app -i 1",
+    "start": "NODE_ENV=production pm2-runtime start ./bootstrap.js --name midway_app -i 1",
     "dev": "cross-env NODE_ENV=local midway-bin dev --ts",
     "test": "midway-bin test --ts",
     "cov": "midway-bin cov --ts",

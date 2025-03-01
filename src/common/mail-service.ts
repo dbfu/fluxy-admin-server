@@ -24,7 +24,7 @@ export class MailService {
 
     // 定义transport对象并发送邮件
     const info = await transporter.sendMail({
-      from: '"FluxyAdmin" <18256485741@163.com>', // 发送方邮箱的账号
+      from: this.mailConfig.auth.user, // 发送方邮箱的账号
       ...mailInfo,
     });
 

@@ -11,8 +11,8 @@ import { uploadWhiteList } from '@midwayjs/upload';
 
 export default (appInfo: MidwayAppInfo) => {
   return {
-    // use for cookie sign key, should change to your own and keep security
     keys: '1684629293601_5943',
+    // 邮件中的系统名称
     title: 'fluxy-admin',
     koa: {
       port: 7001,
@@ -151,16 +151,20 @@ export default (appInfo: MidwayAppInfo) => {
     },
     swagger: {
       documentOptions: {
-        operationIdFactory(controllerKey: string, webRouter: RouterOption) {
+        operationIdFactory(_: string, webRouter: RouterOption) {
           return `${webRouter.method}`;
         },
       },
     },
+    // 密码重置回调地址
     resetPasswordCallbackUrl: 'http://localhost:5173',
+    // 发送给用户邮件中登录地址
     loginUrl: 'http://localhost:5173/user/login',
+    // 上传文件后缀名白名单
     upload: {
       whitelist: [...uploadWhiteList, '.xlsx', '.xls'],
     },
+    // 创建用户的初始密码
     defaultPassword: '123456',
     autoResetDataBase: env.AUTO_RESET_DATABASE === 'true',
   };

@@ -1,29 +1,30 @@
 # fluxy-admin-server
 
-## QuickStart
+## 快速入门
 
-<!-- add docs here for user -->
+<!-- 在此次添加使用文档 -->
 
-see [midway docs][midway] for more detail.
+如需进一步了解，参见 [midway 文档][midway]。
 
-### Development
-
-```bash
-$ npm i
-$ npm run dev
-$ open http://localhost:7001/
-```
-
-### Deploy
+### 本地开发
 
 ```bash
-$ npm start
+npm i
+npm run dev
+open http://localhost:7001/
 ```
 
-### npm scripts
+### 部署
 
-- Use `npm run lint` to check code style.
-- Use `npm test` to run unit test.
+```bash
+npm start
+```
 
+### 内置指令
+
+- 使用 `npm run lint` 来做代码风格检查。
+- 使用 `npm test` 来执行单元测试。
 
 [midway]: https://midwayjs.org
+
+**更多开发教程，请参考[开发文档](https://doc.fluxyadmin.cn)**
